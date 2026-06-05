@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { Screen } from '../components/Screen';
 import { StatCard } from '../components/StatCard';
@@ -16,6 +16,8 @@ import { Asset, AssetPriority, AssetStatus, OperationalEvent, Session } from '..
 
 type UserDashboardScreenProps = {
   session: Session;
+  onCreateAsset: () => void;
+  onEditAsset: (asset: Asset) => void;
   onLogout: () => void;
 };
 
@@ -36,9 +38,13 @@ function formatCost(value: number) {
   return `B/. ${value.toFixed(2)}`;
 }
 
-export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenProps) {
+export function UserDashboardScreen({
+  session,
+  onCreateAsset,
+  onEditAsset,
+  onLogout,
+}: UserDashboardScreenProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -46,34 +52,12 @@ export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenPr
       const currentAssets = getAssetsForUser(storedAssets, session.userId);
 
       setAssets(currentAssets);
-      setSelectedAsset((currentSelectedAsset) => {
-        if (!currentSelectedAsset) {
-          return null;
-        }
-
-        return currentAssets.find((asset) => asset.id === currentSelectedAsset.id) ?? null;
-      });
     }
 
     loadDashboardData();
   }, [session.userId]);
 
   const [stats, managerEvents] = useDashboardDerivedData(session.userId, assets);
-
-  if (selectedAsset) {
-    const selectedAssetEventCount = managerEvents.filter(
-      (event) => event.assetId === selectedAsset.id,
-    ).length;
-
-    return (
-      <AssetDetailPlaceholder
-        asset={selectedAsset}
-        eventCount={selectedAssetEventCount}
-        onBack={() => setSelectedAsset(null)}
-        onLogout={onLogout}
-      />
-    );
-  }
 
   return (
     <Screen>
@@ -95,10 +79,7 @@ export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenPr
         </View>
 
         <View style={styles.actionRow}>
-          <AppButton
-            label="Nuevo activo"
-            onPress={() => Alert.alert('Nuevo activo', 'El formulario de activos va en la siguiente etapa.')}
-          />
+          <AppButton label="Nuevo activo" onPress={onCreateAsset} />
         </View>
 
         <View style={styles.listHeader}>
@@ -117,7 +98,7 @@ export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenPr
           assets.map((asset) => (
             <Pressable
               key={asset.id}
-              onPress={() => setSelectedAsset(asset)}
+              onPress={() => onEditAsset(asset)}
               style={({ pressed }) => [styles.assetCard, pressed && styles.pressed]}
             >
               <View style={styles.assetChipRow}>
@@ -127,7 +108,9 @@ export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenPr
               <Text style={styles.assetName}>{asset.name}</Text>
               <Text style={styles.assetMeta}>{asset.category}</Text>
               <Text style={styles.assetMeta}>Ubicación: {asset.location}</Text>
-              <Text style={styles.assetHint}>Toca para ver detalle</Text>
+              <Text style={styles.assetHint}>
+                {countEventsForAsset(managerEvents, asset.id)} eventos registrados. Toca para editar.
+              </Text>
             </Pressable>
           ))
         )}
@@ -136,6 +119,10 @@ export function UserDashboardScreen({ session, onLogout }: UserDashboardScreenPr
       </ScrollView>
     </Screen>
   );
+}
+
+function countEventsForAsset(events: OperationalEvent[], assetId: string) {
+  return events.filter((event) => event.assetId === assetId).length;
 }
 
 function useDashboardDerivedData(userId: string, currentAssets: Asset[]) {
@@ -158,48 +145,6 @@ function useDashboardDerivedData(userId: string, currentAssets: Asset[]) {
   }, [currentAssets, events, userId]);
 }
 
-type AssetDetailPlaceholderProps = {
-  asset: Asset;
-  eventCount: number;
-  onBack: () => void;
-  onLogout: () => void;
-};
-
-function AssetDetailPlaceholder({
-  asset,
-  eventCount,
-  onBack,
-  onLogout,
-}: AssetDetailPlaceholderProps) {
-  return (
-    <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.detailHeader}>
-          <Text style={styles.detailLabel}>Detalle de activo</Text>
-          <Text style={styles.title}>{asset.name}</Text>
-          <Text style={styles.subtitle}>Historial operativo pendiente para la siguiente etapa.</Text>
-        </View>
-
-        <View style={styles.detailCard}>
-          <View style={styles.assetChipRow}>
-            <StatusChip label={asset.status} tone={statusTone[asset.status]} />
-            <StatusChip label={asset.priority} tone={priorityTone[asset.priority]} />
-          </View>
-          <Text style={styles.assetMeta}>Categoría: {asset.category}</Text>
-          <Text style={styles.assetMeta}>Ubicación: {asset.location}</Text>
-          <Text style={styles.assetMeta}>Proveedor: {asset.provider || 'No asignado'}</Text>
-          <Text style={styles.assetMeta}>Eventos registrados: {eventCount}</Text>
-          <Text style={styles.notes}>{asset.notes || 'Sin notas registradas.'}</Text>
-        </View>
-
-        <AppButton label="Volver al panel" onPress={onBack} />
-        <AppButton label="Cerrar sesión" onPress={onLogout} variant="secondary" />
-      </ScrollView>
-    </Screen>
-  );
-}
-
 const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
@@ -212,21 +157,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
-  },
-  detailHeader: {
-    backgroundColor: colors.umbralInk,
-    borderBottomColor: colors.caribeBlue,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
-    gap: spacing.md,
-    padding: spacing.xl,
-  },
-  detailLabel: {
-    color: colors.guayacanGold,
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
   },
   title: {
     color: colors.cardIvory,
@@ -309,19 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     marginTop: spacing.xs,
-  },
-  detailCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  notes: {
-    color: colors.graphite,
-    fontSize: 15,
-    lineHeight: 22,
   },
   pressed: {
     opacity: 0.78,
