@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Screen } from './src/components/Screen';
 import { AdminUsersScreen } from './src/screens/AdminUsersScreen';
+import { AssetDetailScreen } from './src/screens/AssetDetailScreen';
 import { AssetFormScreen, AssetFormValues } from './src/screens/AssetFormScreen';
+import { EventFormScreen, EventFormValues } from './src/screens/EventFormScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ResidentHomeScreen } from './src/screens/ResidentHomeScreen';
@@ -21,12 +23,14 @@ import {
 } from './src/services/storage';
 import { colors } from './src/theme/colors';
 import { spacing } from './src/theme/spacing';
-import { Asset, Session, User } from './src/types';
+import { Asset, OperationalEvent, Session, User } from './src/types';
 
 type AuthRoute = 'login' | 'register';
 type ManagerRoute =
   | { name: 'dashboard' }
-  | { name: 'assetForm'; asset?: Asset };
+  | { name: 'assetDetail'; asset: Asset }
+  | { name: 'assetForm'; asset?: Asset }
+  | { name: 'eventForm'; asset: Asset; event?: OperationalEvent };
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -173,7 +177,12 @@ export default function App() {
         return 'No se pudo guardar el cambio. Reinicia Expo Go y vuelve a intentar.';
       }
 
-      setManagerRoute({ name: 'dashboard' });
+      if (managerRoute.name === 'assetForm' && managerRoute.asset) {
+        setManagerRoute({ name: 'assetDetail', asset: updatedAsset });
+      } else {
+        setManagerRoute({ name: 'dashboard' });
+      }
+
       return null;
     }
 
@@ -201,6 +210,126 @@ export default function App() {
     }
 
     setManagerRoute({ name: 'dashboard' });
+    return null;
+  }
+
+  async function handleSaveEvent(
+    values: EventFormValues,
+    asset: Asset,
+    event?: OperationalEvent,
+  ): Promise<string | null> {
+    if (!session || session.role !== 'manager') {
+      return 'La sesión del encargado no está disponible.';
+    }
+
+    if (asset.userId !== session.userId) {
+      return 'No puedes modificar eventos de un activo de otro encargado.';
+    }
+
+    const cleanTitle = values.title.trim();
+    const cleanDate = values.date.trim();
+    const cleanCost = values.cost.trim();
+    const parsedCost = cleanCost ? Number(cleanCost.replace(',', '.')) : 0;
+
+    if (!Number.isFinite(parsedCost)) {
+      return 'El costo debe ser un número válido.';
+    }
+
+    const storedEvents = await getEvents();
+    const now = new Date().toISOString();
+
+    if (event) {
+      const updatedEvent: OperationalEvent = {
+        ...event,
+        type: values.type,
+        title: cleanTitle,
+        description: values.description.trim(),
+        date: cleanDate,
+        cost: parsedCost,
+        status: values.status,
+        provider: values.provider.trim(),
+        responsible: values.responsible.trim(),
+        nextReviewDate: values.nextReviewDate.trim(),
+        updatedAt: now,
+      };
+
+      await saveEvents(
+        storedEvents.map((storedEvent) =>
+          storedEvent.id === event.id ? updatedEvent : storedEvent,
+        ),
+      );
+
+      const verifiedEvents = await getEvents();
+      const wasUpdated = verifiedEvents.some(
+        (storedEvent) =>
+          storedEvent.id === event.id &&
+          storedEvent.title === updatedEvent.title &&
+          storedEvent.status === updatedEvent.status,
+      );
+
+      if (!wasUpdated) {
+        return 'No se pudo guardar el evento. Reinicia Expo Go y vuelve a intentar.';
+      }
+
+      setManagerRoute({ name: 'assetDetail', asset });
+      return null;
+    }
+
+    const newEvent: OperationalEvent = {
+      id: `event-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+      assetId: asset.id,
+      type: values.type,
+      title: cleanTitle,
+      description: values.description.trim(),
+      date: cleanDate,
+      cost: parsedCost,
+      status: values.status,
+      provider: values.provider.trim(),
+      responsible: values.responsible.trim(),
+      createdBy: session.userId,
+      nextReviewDate: values.nextReviewDate.trim(),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await saveEvents([...storedEvents, newEvent]);
+
+    const verifiedEvents = await getEvents();
+    const wasCreated = verifiedEvents.some((storedEvent) => storedEvent.id === newEvent.id);
+
+    if (!wasCreated) {
+      return 'No se pudo crear el evento. Reinicia Expo Go y vuelve a intentar.';
+    }
+
+    setManagerRoute({ name: 'assetDetail', asset });
+    return null;
+  }
+
+  async function handleDeleteEvent(
+    asset: Asset,
+    event: OperationalEvent,
+  ): Promise<string | null> {
+    if (!session || session.role !== 'manager') {
+      return 'La sesión del encargado no está disponible.';
+    }
+
+    if (asset.userId !== session.userId || event.assetId !== asset.id) {
+      return 'No puedes eliminar este evento desde esta sesión.';
+    }
+
+    const storedEvents = await getEvents();
+    const nextEvents = storedEvents.filter((storedEvent) => storedEvent.id !== event.id);
+
+    await saveEvents(nextEvents);
+
+    const verifiedEvents = await getEvents();
+    const eventStillExists = verifiedEvents.some((storedEvent) => storedEvent.id === event.id);
+
+    if (eventStillExists) {
+      return 'No se pudo eliminar el evento. Reinicia Expo Go y vuelve a intentar.';
+    }
+
+    setManagerRoute({ name: 'assetDetail', asset });
     return null;
   }
 
@@ -273,9 +402,40 @@ export default function App() {
     return (
       <AssetFormScreen
         asset={managerRoute.asset}
-        onCancel={() => setManagerRoute({ name: 'dashboard' })}
+        onCancel={() =>
+          managerRoute.asset
+            ? setManagerRoute({ name: 'assetDetail', asset: managerRoute.asset })
+            : setManagerRoute({ name: 'dashboard' })
+        }
         onDelete={handleDeleteAsset}
         onSave={handleSaveAsset}
+      />
+    );
+  }
+
+  if (managerRoute.name === 'eventForm') {
+    return (
+      <EventFormScreen
+        asset={managerRoute.asset}
+        event={managerRoute.event}
+        onCancel={() => setManagerRoute({ name: 'assetDetail', asset: managerRoute.asset })}
+        onDelete={handleDeleteEvent}
+        onSave={handleSaveEvent}
+      />
+    );
+  }
+
+  if (managerRoute.name === 'assetDetail') {
+    return (
+      <AssetDetailScreen
+        asset={managerRoute.asset}
+        onAddEvent={(asset) => setManagerRoute({ name: 'eventForm', asset })}
+        onBack={() => setManagerRoute({ name: 'dashboard' })}
+        onDeleteAsset={handleDeleteAsset}
+        onDeleteEvent={handleDeleteEvent}
+        onEditAsset={(asset) => setManagerRoute({ name: 'assetForm', asset })}
+        onEditEvent={(asset, event) => setManagerRoute({ name: 'eventForm', asset, event })}
+        onLogout={handleLogout}
       />
     );
   }
@@ -284,7 +444,7 @@ export default function App() {
     <UserDashboardScreen
       session={session}
       onCreateAsset={() => setManagerRoute({ name: 'assetForm' })}
-      onEditAsset={(asset) => setManagerRoute({ name: 'assetForm', asset })}
+      onOpenAsset={(asset) => setManagerRoute({ name: 'assetDetail', asset })}
       onLogout={handleLogout}
     />
   );

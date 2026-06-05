@@ -17,7 +17,7 @@ import { Asset, AssetPriority, AssetStatus, OperationalEvent, Session } from '..
 type UserDashboardScreenProps = {
   session: Session;
   onCreateAsset: () => void;
-  onEditAsset: (asset: Asset) => void;
+  onOpenAsset: (asset: Asset) => void;
   onLogout: () => void;
 };
 
@@ -41,7 +41,7 @@ function formatCost(value: number) {
 export function UserDashboardScreen({
   session,
   onCreateAsset,
-  onEditAsset,
+  onOpenAsset,
   onLogout,
 }: UserDashboardScreenProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -98,7 +98,7 @@ export function UserDashboardScreen({
           assets.map((asset) => (
             <Pressable
               key={asset.id}
-              onPress={() => onEditAsset(asset)}
+              onPress={() => onOpenAsset(asset)}
               style={({ pressed }) => [styles.assetCard, pressed && styles.pressed]}
             >
               <View style={styles.assetChipRow}>
@@ -109,7 +109,7 @@ export function UserDashboardScreen({
               <Text style={styles.assetMeta}>{asset.category}</Text>
               <Text style={styles.assetMeta}>Ubicación: {asset.location}</Text>
               <Text style={styles.assetHint}>
-                {countEventsForAsset(managerEvents, asset.id)} eventos registrados. Toca para editar.
+                {countEventsForAsset(managerEvents, asset.id)} eventos registrados. Toca para ver historial.
               </Text>
             </Pressable>
           ))
