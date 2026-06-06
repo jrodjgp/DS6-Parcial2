@@ -4,6 +4,7 @@ import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
 import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
+import { clearDemoData, loadDemoData } from '../services/demoDataService';
 import { getUsers, saveUsers } from '../services/storage';
 import { colors } from '../theme/colors';
 import { radius, shadow, spacing } from '../theme/spacing';
@@ -49,6 +50,11 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
 
     loadUsers();
   }, []);
+
+  async function refreshUsers() {
+    const storedUsers = await getUsers();
+    setUsers(storedUsers);
+  }
 
   async function handleAddUser() {
     if (isSaving) {
@@ -121,6 +127,18 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
     setMessage('Usuario eliminado. Ya no podrá iniciar sesión.');
   }
 
+  async function handleLoadDemo() {
+    await loadDemoData();
+    await refreshUsers();
+    setMessage('Demo cargada: manager, residente, activos y eventos listos.');
+  }
+
+  async function handleClearDemo() {
+    await clearDemoData();
+    await refreshUsers();
+    setMessage('Demo limpiada. El administrador del sistema se conserva.');
+  }
+
   return (
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
@@ -177,6 +195,18 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
             label={isSaving ? 'Guardando...' : 'Agregar usuario'}
             onPress={handleAddUser}
           />
+        </View>
+
+        <View style={styles.demoCard}>
+          <StatusChip label="demo" tone="info" />
+          <Text style={styles.sectionTitle}>Datos para presentación</Text>
+          <Text style={styles.demoText}>
+            Carga cuentas y registros operativos seguros para explicar el parcial sin llenar datos a mano.
+          </Text>
+          <View style={styles.demoActions}>
+            <AppButton label="Cargar demo" onPress={handleLoadDemo} />
+            <AppButton label="Limpiar demo" onPress={handleClearDemo} variant="secondary" />
+          </View>
         </View>
 
         <View style={styles.listHeader}>
@@ -278,6 +308,23 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: spacing.xl,
     ...shadow.soft,
+  },
+  demoCard: {
+    backgroundColor: colors.mistGreen,
+    borderColor: colors.caribeBlue,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.xl,
+    ...shadow.soft,
+  },
+  demoText: {
+    color: colors.deepCanopy,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  demoActions: {
+    gap: spacing.md,
   },
   sectionTitle: {
     color: colors.umbralInk,
