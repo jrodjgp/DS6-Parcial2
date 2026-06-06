@@ -4,7 +4,7 @@ import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
 import { Screen } from '../components/Screen';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 
 type LoginScreenProps = {
   onLogin: (email: string, password: string) => Promise<string | null>;
@@ -84,6 +84,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 6,
     borderRadius: radius.xl,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   kicker: {
     color: colors.mistGreen,
@@ -112,7 +113,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.lg,
     marginTop: spacing.xl,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    ...shadow.soft,
   },
   cardTitle: {
     color: colors.umbralInk,

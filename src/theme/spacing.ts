@@ -9,7 +9,25 @@ export const spacing = {
 
 export const radius = {
   sm: 8,
-  md: 10,
-  lg: 14,
-  xl: 18,
+  md: 12,
+  lg: 18,
+  xl: 24,
+  pill: 999,
+};
+
+export const shadow = {
+  soft: {
+    elevation: 2,
+    shadowColor: '#10231F',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+  },
+  lift: {
+    elevation: 4,
+    shadowColor: '#10231F',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+  },
 };

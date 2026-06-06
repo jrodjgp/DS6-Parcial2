@@ -29,7 +29,7 @@ export function StatusChip({ label, tone = 'neutral' }: StatusChipProps) {
 const styles = StyleSheet.create({
   chip: {
     alignSelf: 'flex-start',
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },

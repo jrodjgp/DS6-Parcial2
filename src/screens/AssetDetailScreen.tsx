@@ -5,7 +5,7 @@ import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
 import { getEvents } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import {
   Asset,
   AssetPriority,
@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   headerLabel: {
     color: colors.guayacanGold,
@@ -261,6 +262,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
+    ...shadow.soft,
   },
   infoRow: {
     gap: spacing.xs,
@@ -308,6 +310,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     padding: spacing.xl,
+    ...shadow.soft,
   },
   emptyTitle: {
     color: colors.umbralInk,
@@ -327,6 +330,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
+    ...shadow.soft,
   },
   eventPressArea: {
     gap: spacing.sm,
@@ -371,8 +375,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     alignItems: 'center',
     backgroundColor: colors.coralAlerta,
-    borderRadius: radius.md,
-    minHeight: 52,
+    borderRadius: radius.lg,
+    minHeight: 54,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
@@ -383,6 +387,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });

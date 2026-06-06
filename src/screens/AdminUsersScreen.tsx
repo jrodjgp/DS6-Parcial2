@@ -6,7 +6,7 @@ import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
 import { getUsers, saveUsers } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import { Session, User, UserRole } from '../types';
 
 type AdminUsersScreenProps = {
@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   title: {
     color: colors.cardIvory,
@@ -275,7 +276,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    ...shadow.soft,
   },
   sectionTitle: {
     color: colors.umbralInk,
@@ -299,10 +301,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.mistGreen,
     borderColor: colors.deepCanopy,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     flex: 1,
-    minHeight: 48,
+    minHeight: 52,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
   },
@@ -342,6 +344,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.lg,
+    ...shadow.soft,
   },
   userTopRow: {
     alignItems: 'center',
@@ -373,9 +376,9 @@ const styles = StyleSheet.create({
   deleteButton: {
     alignItems: 'center',
     backgroundColor: colors.coralAlerta,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     marginTop: spacing.sm,
-    minHeight: 46,
+    minHeight: 50,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
@@ -392,6 +395,6 @@ const styles = StyleSheet.create({
     color: colors.graphite,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });

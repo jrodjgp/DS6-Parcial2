@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: colors.warmSand,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
   },
 });

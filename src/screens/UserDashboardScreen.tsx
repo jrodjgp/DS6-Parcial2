@@ -11,7 +11,7 @@ import {
   getEventsForAssets,
 } from '../services/statsService';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import { Asset, AssetPriority, AssetStatus, OperationalEvent, Session } from '../types';
 
 type UserDashboardScreenProps = {
@@ -157,6 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   title: {
     color: colors.cardIvory,
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   statsGrid: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
   actionRow: {
     gap: spacing.md,
@@ -197,6 +198,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     padding: spacing.xl,
+    ...shadow.soft,
   },
   emptyTitle: {
     color: colors.umbralInk,
@@ -217,6 +219,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: spacing.sm,
     padding: spacing.lg,
+    ...shadow.soft,
   },
   assetChipRow: {
     flexDirection: 'row',
@@ -241,6 +244,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });

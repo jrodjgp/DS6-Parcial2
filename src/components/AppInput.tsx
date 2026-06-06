@@ -30,13 +30,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   input: {
-    backgroundColor: colors.white,
-    borderColor: colors.isthmusTeal,
-    borderRadius: radius.md,
+    backgroundColor: colors.warmSand,
+    borderColor: colors.mistGreen,
+    borderRadius: radius.lg,
     borderWidth: 1,
     color: colors.umbralInk,
     fontSize: 17,
-    minHeight: 52,
+    minHeight: 54,
     paddingHorizontal: spacing.lg,
   },
 });

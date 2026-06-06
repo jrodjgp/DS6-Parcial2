@@ -5,11 +5,12 @@ import { radius, spacing } from '../theme/spacing';
 type AppButtonProps = {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'danger';
 };
 
 export function AppButton({ label, onPress, variant = 'primary' }: AppButtonProps) {
   const isSecondary = variant === 'secondary';
+  const isDanger = variant === 'danger';
 
   return (
     <Pressable
@@ -17,6 +18,7 @@ export function AppButton({ label, onPress, variant = 'primary' }: AppButtonProp
       style={({ pressed }) => [
         styles.button,
         isSecondary && styles.secondaryButton,
+        isDanger && styles.dangerButton,
         pressed && styles.pressed,
       ]}
     >
@@ -29,18 +31,22 @@ const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
     backgroundColor: colors.isthmusTeal,
-    borderRadius: radius.md,
-    minHeight: 52,
+    borderRadius: radius.lg,
+    minHeight: 54,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
   secondaryButton: {
     backgroundColor: colors.mistGreen,
     borderColor: colors.deepCanopy,
     borderWidth: 1,
   },
+  dangerButton: {
+    backgroundColor: colors.coralAlerta,
+  },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
   label: {
     color: colors.cardIvory,

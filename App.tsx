@@ -23,7 +23,7 @@ import {
   saveUsers,
 } from './src/services/storage';
 import { colors } from './src/theme/colors';
-import { spacing } from './src/theme/spacing';
+import { shadow, spacing } from './src/theme/spacing';
 import { Asset, OperationalEvent, Session, User } from './src/types';
 
 type AuthRoute = 'login' | 'register';
@@ -524,6 +524,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 6,
     marginTop: spacing.xl,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   loadingTitle: {
     color: colors.cardIvory,

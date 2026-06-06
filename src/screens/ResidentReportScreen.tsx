@@ -6,7 +6,7 @@ import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
 import { getAssets } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import { Asset, Session } from '../types';
 
 export type ResidentReportValues = {
@@ -182,6 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   title: {
     color: colors.cardIvory,
@@ -200,7 +201,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    ...shadow.soft,
   },
   optionGroup: {
     gap: spacing.sm,
@@ -216,9 +218,10 @@ const styles = StyleSheet.create({
   option: {
     backgroundColor: colors.mistGreen,
     borderColor: colors.deepCanopy,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.xs,
+    minHeight: 62,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
@@ -256,6 +259,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });

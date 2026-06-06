@@ -9,7 +9,6 @@ export const colors = {
   cardIvory: '#FFF8EA',
   mistGreen: '#DCEAE2',
   graphite: '#5A6B66',
-  white: '#FFFFFF',
 };
 
 export type AppColor = keyof typeof colors;

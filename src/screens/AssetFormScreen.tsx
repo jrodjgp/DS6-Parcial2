@@ -5,7 +5,7 @@ import { AppInput } from '../components/AppInput';
 import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import { Asset, AssetPriority, AssetStatus } from '../types';
 
 export type AssetFormValues = {
@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   title: {
     color: colors.cardIvory,
@@ -284,7 +285,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.lg,
-    padding: spacing.lg,
+    padding: spacing.xl,
+    ...shadow.soft,
   },
   fieldLabel: {
     color: colors.umbralInk,
@@ -302,9 +304,9 @@ const styles = StyleSheet.create({
   option: {
     backgroundColor: colors.mistGreen,
     borderColor: colors.deepCanopy,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    minHeight: 42,
+    minHeight: 46,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -335,8 +337,8 @@ const styles = StyleSheet.create({
   deleteButton: {
     alignItems: 'center',
     backgroundColor: colors.coralAlerta,
-    borderRadius: radius.md,
-    minHeight: 52,
+    borderRadius: radius.lg,
+    minHeight: 54,
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
@@ -347,6 +349,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });

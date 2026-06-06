@@ -3,7 +3,7 @@ import { AppButton } from '../components/AppButton';
 import { Screen } from '../components/Screen';
 import { StatusChip } from '../components/StatusChip';
 import { colors } from '../theme/colors';
-import { radius, spacing } from '../theme/spacing';
+import { radius, shadow, spacing } from '../theme/spacing';
 import { Session } from '../types';
 
 type ResidentHomeScreenProps = {
@@ -97,6 +97,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     gap: spacing.md,
     padding: spacing.xl,
+    ...shadow.lift,
   },
   title: {
     color: colors.cardIvory,
@@ -115,7 +116,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     gap: spacing.sm,
-    padding: spacing.lg,
+    minHeight: 106,
+    padding: spacing.xl,
+    ...shadow.soft,
   },
   primaryActionCard: {
     backgroundColor: colors.isthmusTeal,
@@ -139,6 +142,6 @@ const styles = StyleSheet.create({
     color: colors.mistGreen,
   },
   pressed: {
-    opacity: 0.78,
+    opacity: 0.82,
   },
 });
