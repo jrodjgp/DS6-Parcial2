@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
+import { HeaderHero } from '../components/HeaderHero';
 import { Screen } from '../components/Screen';
-import { StatusChip } from '../components/StatusChip';
+import { SectionCard } from '../components/SectionCard';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import {
   Asset,
   OperationalEvent,
@@ -135,19 +136,23 @@ export function EventFormScreen({
 
   return (
     <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.header}>
-          <StatusChip label={event ? 'editar evento' : 'nuevo evento'} tone="info" />
-          <Text style={styles.title}>{event ? 'Editar evento' : 'Añadir evento'}</Text>
-          <Text style={styles.subtitle}>{asset.name}</Text>
-        </View>
+        <HeaderHero
+          label={event ? 'editar evento' : 'nuevo evento'}
+          title={event ? 'Editar evento' : 'Añadir evento'}
+          subtitle={asset.name}
+          accent="blue"
+        />
 
-        <View style={styles.card}>
+        <SectionCard
+          title="Registro de historial"
+          subtitle="Cada evento queda vinculado a este activo para alimentar estadísticas y seguimiento."
+        >
           <OptionGroup
             label="Tipo"
             options={eventTypes}
@@ -172,20 +177,25 @@ export function EventFormScreen({
             style={styles.notesInput}
           />
 
-          <AppInput
-            label="Fecha"
-            value={values.date}
-            onChangeText={(text) => updateValue('date', text)}
-            placeholder="YYYY-MM-DD"
-          />
-
-          <AppInput
-            label="Costo"
-            value={values.cost}
-            onChangeText={(text) => updateValue('cost', text)}
-            placeholder="0"
-            keyboardType="decimal-pad"
-          />
+          <View style={styles.twoColumn}>
+            <View style={styles.column}>
+              <AppInput
+                label="Fecha"
+                value={values.date}
+                onChangeText={(text) => updateValue('date', text)}
+                placeholder="YYYY-MM-DD"
+              />
+            </View>
+            <View style={styles.column}>
+              <AppInput
+                label="Costo"
+                value={values.cost}
+                onChangeText={(text) => updateValue('cost', text)}
+                placeholder="0"
+                keyboardType="decimal-pad"
+              />
+            </View>
+          </View>
 
           <OptionGroup
             label="Estado"
@@ -224,14 +234,9 @@ export function EventFormScreen({
           <AppButton label="Volver al activo" onPress={onCancel} variant="secondary" />
 
           {event ? (
-            <Pressable
-              onPress={requestDelete}
-              style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.deleteText}>Eliminar evento</Text>
-            </Pressable>
+            <AppButton label="Eliminar evento" onPress={requestDelete} variant="danger" />
           ) : null}
-        </View>
+        </SectionCard>
       </ScrollView>
     </Screen>
   );
@@ -283,39 +288,10 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.caribeBlue,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
-    gap: spacing.md,
-    padding: spacing.xl,
-    ...shadow.lift,
-  },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: colors.mistGreen,
-    fontSize: 16,
-    lineHeight: 23,
-  },
-  card: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
   fieldLabel: {
-    color: colors.umbralInk,
+    color: colors.ink,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   optionGroup: {
     gap: spacing.sm,
@@ -326,51 +302,47 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   option: {
-    backgroundColor: colors.mistGreen,
-    borderColor: colors.deepCanopy,
-    borderRadius: radius.lg,
+    backgroundColor: colors.mist,
+    borderColor: colors.line,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    minHeight: 46,
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   optionSelected: {
-    backgroundColor: colors.isthmusTeal,
-    borderColor: colors.isthmusTeal,
+    backgroundColor: colors.teal,
+    borderColor: colors.teal,
   },
   optionText: {
-    color: colors.deepCanopy,
+    color: colors.canopy,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0,
   },
   optionTextSelected: {
-    color: colors.cardIvory,
+    color: colors.ivory,
+  },
+  twoColumn: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  column: {
+    flex: 1,
   },
   notesInput: {
-    minHeight: 96,
+    minHeight: 104,
     paddingTop: spacing.md,
   },
   message: {
-    color: colors.coralAlerta,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    color: colors.coral,
     fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  deleteButton: {
-    alignItems: 'center',
-    backgroundColor: colors.coralAlerta,
-    borderRadius: radius.lg,
-    minHeight: 54,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  deleteText: {
-    color: colors.cardIvory,
-    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0,
+    lineHeight: 20,
+    padding: spacing.md,
   },
   pressed: {
     opacity: 0.82,

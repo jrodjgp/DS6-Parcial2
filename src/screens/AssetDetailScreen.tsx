@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
+import { HeaderHero } from '../components/HeaderHero';
+import { QuickActionCard } from '../components/QuickActionCard';
 import { Screen } from '../components/Screen';
+import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
+import { TimelineEventCard } from '../components/TimelineEventCard';
 import { getEvents } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import {
   Asset,
   AssetPriority,
@@ -130,61 +134,74 @@ export function AssetDetailScreen({
 
   return (
     <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.headerLabel}>Detalle de activo</Text>
-          <Text style={styles.title}>{asset.name}</Text>
+        <HeaderHero label="Detalle de activo" title={asset.name} subtitle={asset.location}>
           <View style={styles.chipRow}>
             <StatusChip label={asset.status} tone={statusTone[asset.status]} />
             <StatusChip label={asset.priority} tone={priorityTone[asset.priority]} />
           </View>
-        </View>
+        </HeaderHero>
 
-        <View style={styles.assetCard}>
+        <SectionCard title="Ficha operativa" subtitle="Datos principales del activo o área.">
           <InfoRow label="Categoría" value={asset.category} />
           <InfoRow label="Ubicación" value={asset.location} />
           <InfoRow label="Proveedor" value={asset.provider || 'No asignado'} />
           <InfoRow label="Notas" value={asset.notes || 'Sin notas registradas.'} />
-        </View>
+        </SectionCard>
 
-        <View style={styles.actionGrid}>
-          <AppButton label="Añadir evento" onPress={() => onAddEvent(asset)} />
-          <AppButton label="Editar activo" onPress={() => onEditAsset(asset)} variant="secondary" />
+        <View style={styles.actionRow}>
+          <QuickActionCard
+            title="Añadir evento"
+            body="Mantenimiento, incidencia o revisión"
+            symbol="+"
+            variant="primary"
+            onPress={() => onAddEvent(asset)}
+          />
+          <QuickActionCard
+            title="Editar activo"
+            body="Actualizar ficha"
+            symbol="E"
+            variant="neutral"
+            onPress={() => onEditAsset(asset)}
+          />
         </View>
 
         {message ? <Text style={styles.message}>{message}</Text> : null}
 
         <View style={styles.timelineHeader}>
-          <Text style={styles.sectionTitle}>Historial operativo</Text>
+          <View>
+            <Text style={styles.sectionTitle}>Historial operativo</Text>
+            <Text style={styles.sectionSubtitle}>Subregistros ligados a este activo</Text>
+          </View>
           <Text style={styles.count}>{events.length} eventos</Text>
         </View>
 
         {events.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Sin eventos todavía</Text>
-            <Text style={styles.emptyText}>
-              Registra mantenimientos, incidencias, inspecciones o visitas técnicas para construir la bitácora.
-            </Text>
-          </View>
+          <SectionCard
+            title="Sin eventos todavía"
+            subtitle="Registra mantenimientos, incidencias, inspecciones o visitas técnicas para construir la bitácora."
+            tone="goldSoft"
+          >
+            <Text style={styles.emptyText}>Este espacio mostrará la historia operativa del activo.</Text>
+          </SectionCard>
         ) : (
           events.map((event) => (
-            <View key={event.id} style={styles.eventCard}>
+            <View key={event.id} style={styles.eventBlock}>
               <Pressable
                 onPress={() => onEditEvent(asset, event)}
-                style={({ pressed }) => [styles.eventPressArea, pressed && styles.pressed]}
+                style={({ pressed }) => pressed && styles.pressed}
               >
-                <View style={styles.eventTopRow}>
-                  <StatusChip label={event.type} tone="neutral" />
-                  <StatusChip label={event.status} tone={eventStatusTone[event.status]} />
-                </View>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text style={styles.eventMeta}>Fecha: {event.date}</Text>
-                <Text style={styles.eventMeta}>Costo: {formatCost(event.cost)}</Text>
-                <Text style={styles.eventMeta}>
-                  Proveedor: {event.provider || 'No asignado'}
-                </Text>
-                <Text style={styles.eventHint}>Toca para editar</Text>
+                <TimelineEventCard
+                  type={event.type}
+                  title={event.title}
+                  date={event.date}
+                  status={event.status}
+                  cost={formatCost(event.cost)}
+                  provider={event.provider || 'Proveedor no asignado'}
+                  description={event.description}
+                  statusTone={eventStatusTone[event.status]}
+                />
               </Pressable>
               <Pressable
                 onPress={() => requestDeleteEvent(event)}
@@ -196,12 +213,7 @@ export function AssetDetailScreen({
           ))
         )}
 
-        <Pressable
-          onPress={requestDeleteAsset}
-          style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.deleteText}>Eliminar activo</Text>
-        </Pressable>
+        <AppButton label="Eliminar activo" onPress={requestDeleteAsset} variant="danger" />
         <AppButton label="Volver al panel" onPress={onBack} variant="secondary" />
         <AppButton label="Cerrar sesión" onPress={onLogout} variant="secondary" />
       </ScrollView>
@@ -228,44 +240,16 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.guayacanGold,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
-    gap: spacing.md,
-    padding: spacing.xl,
-    ...shadow.lift,
-  },
-  headerLabel: {
-    color: colors.guayacanGold,
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
-  assetCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-    ...shadow.soft,
-  },
   infoRow: {
+    backgroundColor: colors.sand,
+    borderRadius: radius.lg,
     gap: spacing.xs,
+    padding: spacing.md,
   },
   infoLabel: {
     color: colors.graphite,
@@ -275,114 +259,67 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   infoValue: {
-    color: colors.umbralInk,
+    color: colors.ink,
     fontSize: 16,
     lineHeight: 23,
   },
-  actionGrid: {
+  actionRow: {
+    flexDirection: 'row',
     gap: spacing.md,
   },
   message: {
-    color: colors.coralAlerta,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    color: colors.coral,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     lineHeight: 20,
+    padding: spacing.md,
   },
   timelineHeader: {
-    alignItems: 'center',
+    alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    color: colors.umbralInk,
-    fontSize: 22,
+    color: colors.ink,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: 0,
+  },
+  sectionSubtitle: {
+    color: colors.graphite,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: spacing.xs,
   },
   count: {
     color: colors.graphite,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  emptyState: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  emptyTitle: {
-    color: colors.umbralInk,
-    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: 0,
   },
   emptyText: {
-    color: colors.graphite,
+    color: colors.canopy,
     fontSize: 15,
     lineHeight: 22,
-    marginTop: spacing.sm,
   },
-  eventCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
-    ...shadow.soft,
-  },
-  eventPressArea: {
+  eventBlock: {
     gap: spacing.sm,
-    padding: spacing.lg,
-  },
-  eventTopRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  eventTitle: {
-    color: colors.umbralInk,
-    fontSize: 19,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  eventMeta: {
-    color: colors.deepCanopy,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  eventHint: {
-    color: colors.graphite,
-    fontSize: 13,
-    fontWeight: '700',
   },
   eventDeleteButton: {
     alignItems: 'center',
-    backgroundColor: colors.mistGreen,
-    borderTopColor: colors.cardIvory,
-    borderTopWidth: 1,
-    minHeight: 46,
+    alignSelf: 'flex-end',
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.coral,
+    borderRadius: radius.lg,
+    borderWidth: 1,
     justifyContent: 'center',
+    minHeight: 44,
     paddingHorizontal: spacing.lg,
   },
   eventDeleteText: {
-    color: colors.coralAlerta,
+    color: colors.coral,
     fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  deleteButton: {
-    alignItems: 'center',
-    backgroundColor: colors.coralAlerta,
-    borderRadius: radius.lg,
-    minHeight: 54,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  deleteText: {
-    color: colors.cardIvory,
-    fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0,
   },

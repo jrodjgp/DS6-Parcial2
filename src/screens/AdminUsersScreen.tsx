@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
+import { HeaderHero } from '../components/HeaderHero';
+import { RiskCard } from '../components/RiskCard';
 import { Screen } from '../components/Screen';
+import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { clearDemoData, loadDemoData } from '../services/demoDataService';
 import { getUsers, saveUsers } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import { Session, User, UserRole } from '../types';
 
 type AdminUsersScreenProps = {
@@ -31,6 +34,18 @@ const roleChipTones: Record<UserRole, 'warning' | 'success' | 'info'> = {
 
 function formatDate(value: string) {
   return value.split('T')[0] || 'Sin fecha';
+}
+
+function getRoleSeverity(role: UserRole): 'low' | 'medium' | 'high' {
+  if (role === 'system_admin') {
+    return 'high';
+  }
+
+  if (role === 'manager') {
+    return 'medium';
+  }
+
+  return 'low';
 }
 
 export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
@@ -141,16 +156,31 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
 
   return (
     <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <StatusChip label="system admin" tone="warning" />
-          <Text style={styles.title}>Usuarios de Umbral</Text>
-          <Text style={styles.greeting}>Hola, {session.name}</Text>
-        </View>
+        <HeaderHero
+          label="system admin"
+          title="Usuarios de Umbral"
+          subtitle={`Hola, ${session.name}. Control local de accesos para el parcial.`}
+        >
+          <View style={styles.heroMetaRow}>
+            <View style={styles.heroPill}>
+              <Text style={styles.heroPillValue}>{users.length}</Text>
+              <Text style={styles.heroPillLabel}>usuarios</Text>
+            </View>
+            <View style={styles.heroPill}>
+              <Text style={styles.heroPillValue}>
+                {users.filter((user) => user.role === 'manager').length}
+              </Text>
+              <Text style={styles.heroPillLabel}>managers</Text>
+            </View>
+          </View>
+        </HeaderHero>
 
-        <View style={styles.formCard}>
-          <Text style={styles.sectionTitle}>Agregar usuario</Text>
+        <SectionCard
+          title="Agregar usuario"
+          subtitle="Crea accesos locales para encargados operativos o residentes."
+        >
           <AppInput
             label="Nombre"
             value={name}
@@ -195,22 +225,24 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
             label={isSaving ? 'Guardando...' : 'Agregar usuario'}
             onPress={handleAddUser}
           />
-        </View>
+        </SectionCard>
 
-        <View style={styles.demoCard}>
-          <StatusChip label="demo" tone="info" />
-          <Text style={styles.sectionTitle}>Datos para presentación</Text>
-          <Text style={styles.demoText}>
-            Carga cuentas y registros operativos seguros para explicar el parcial sin llenar datos a mano.
-          </Text>
+        <SectionCard
+          title="Datos para presentación"
+          subtitle="Cuentas y registros seguros para explicar el flujo sin llenar todo a mano."
+          tone="tealSoft"
+        >
           <View style={styles.demoActions}>
             <AppButton label="Cargar demo" onPress={handleLoadDemo} />
             <AppButton label="Limpiar demo" onPress={handleClearDemo} variant="secondary" />
           </View>
-        </View>
+        </SectionCard>
 
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Usuarios registrados</Text>
+          <View>
+            <Text style={styles.sectionTitle}>Usuarios registrados</Text>
+            <Text style={styles.sectionSubtitle}>Administración con persistencia local</Text>
+          </View>
           <Text style={styles.count}>{users.length} total</Text>
         </View>
 
@@ -218,16 +250,17 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
           const isCurrentUser = user.id === session.userId;
 
           return (
-            <View key={user.id} style={styles.userCard}>
-              <View style={styles.userTopRow}>
-                <StatusChip label={user.role} tone={roleChipTones[user.role]} />
-                {isCurrentUser ? <Text style={styles.currentTag}>Sesión actual</Text> : null}
+            <RiskCard
+              key={user.id}
+              title={user.name}
+              subtitle={user.email}
+              meta={`Creado: ${formatDate(user.createdAt)}`}
+              severity={getRoleSeverity(user.role)}
+            >
+              <View style={styles.userChipRow}>
+                <StatusChip label={roleLabels[user.role]} tone={roleChipTones[user.role]} />
+                {isCurrentUser ? <StatusChip label="sesión actual" tone="neutral" /> : null}
               </View>
-
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
-              <Text style={styles.userMeta}>Rol: {roleLabels[user.role]}</Text>
-              <Text style={styles.userMeta}>Creado: {formatDate(user.createdAt)}</Text>
 
               <Pressable
                 onPress={() => requestDeleteUser(user)}
@@ -241,7 +274,7 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
                   {isCurrentUser ? 'No se puede eliminar' : 'Eliminar usuario'}
                 </Text>
               </Pressable>
-            </View>
+            </RiskCard>
           );
         })}
 
@@ -279,63 +312,35 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.guayacanGold,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
+  heroMetaRow: {
+    flexDirection: 'row',
     gap: spacing.md,
-    padding: spacing.xl,
-    ...shadow.lift,
   },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 32,
+  heroPill: {
+    backgroundColor: 'rgba(255, 248, 234, 0.14)',
+    borderColor: 'rgba(255, 248, 234, 0.2)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    flex: 1,
+    padding: spacing.md,
+  },
+  heroPillValue: {
+    color: colors.ivory,
+    fontSize: 28,
     fontWeight: '800',
     letterSpacing: 0,
   },
-  greeting: {
-    color: colors.mistGreen,
-    fontSize: 18,
-    fontWeight: '700',
-    lineHeight: 25,
-  },
-  formCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  demoCard: {
-    backgroundColor: colors.mistGreen,
-    borderColor: colors.caribeBlue,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  demoText: {
-    color: colors.deepCanopy,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  demoActions: {
-    gap: spacing.md,
-  },
-  sectionTitle: {
-    color: colors.umbralInk,
-    fontSize: 22,
+  heroPillLabel: {
+    color: colors.gold,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0,
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
   },
   fieldLabel: {
-    color: colors.umbralInk,
+    color: colors.ink,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   roleGroup: {
     gap: spacing.sm,
@@ -346,94 +351,81 @@ const styles = StyleSheet.create({
   },
   roleOption: {
     alignItems: 'center',
-    backgroundColor: colors.mistGreen,
-    borderColor: colors.deepCanopy,
+    backgroundColor: colors.mist,
+    borderColor: colors.line,
     borderRadius: radius.lg,
     borderWidth: 1,
     flex: 1,
-    minHeight: 52,
     justifyContent: 'center',
+    minHeight: 54,
     paddingHorizontal: spacing.md,
   },
   roleOptionSelected: {
-    backgroundColor: colors.isthmusTeal,
-    borderColor: colors.isthmusTeal,
+    backgroundColor: colors.teal,
+    borderColor: colors.teal,
   },
   roleOptionText: {
-    color: colors.deepCanopy,
+    color: colors.canopy,
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0,
   },
   roleOptionTextSelected: {
-    color: colors.cardIvory,
+    color: colors.ivory,
   },
   message: {
-    color: colors.deepCanopy,
+    backgroundColor: colors.goldSoft,
+    borderRadius: radius.md,
+    color: colors.canopy,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     lineHeight: 20,
+    padding: spacing.md,
+  },
+  demoActions: {
+    gap: spacing.md,
   },
   listHeader: {
-    alignItems: 'center',
+    alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    color: colors.ink,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  sectionSubtitle: {
+    color: colors.graphite,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: spacing.xs,
   },
   count: {
     color: colors.graphite,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  userCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-    ...shadow.soft,
-  },
-  userTopRow: {
-    alignItems: 'center',
+  userChipRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  currentTag: {
-    color: colors.graphite,
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  userName: {
-    color: colors.umbralInk,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  userEmail: {
-    color: colors.deepCanopy,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  userMeta: {
-    color: colors.graphite,
-    fontSize: 14,
-    lineHeight: 20,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
   deleteButton: {
     alignItems: 'center',
-    backgroundColor: colors.coralAlerta,
+    backgroundColor: colors.coral,
     borderRadius: radius.lg,
-    marginTop: spacing.sm,
-    minHeight: 50,
     justifyContent: 'center',
+    marginTop: spacing.md,
+    minHeight: 50,
     paddingHorizontal: spacing.lg,
   },
   disabledButton: {
-    backgroundColor: colors.mistGreen,
+    backgroundColor: colors.mist,
   },
   deleteText: {
-    color: colors.cardIvory,
+    color: colors.ivory,
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0,

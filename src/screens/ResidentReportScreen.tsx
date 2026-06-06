@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
+import { HeaderHero } from '../components/HeaderHero';
 import { Screen } from '../components/Screen';
+import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { getAssets } from '../services/storage';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import { Asset, Session } from '../types';
 
 export type ResidentReportValues = {
@@ -88,51 +90,54 @@ export function ResidentReportScreen({
 
   return (
     <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.header}>
-          <StatusChip label="incidencia" tone="info" />
-          <Text style={styles.title}>Reportar incidencia</Text>
-          <Text style={styles.subtitle}>Hola, {session.name}. Cuéntanos qué pasó.</Text>
-        </View>
+        <HeaderHero
+          label="incidencia residente"
+          title="Reportar incidencia"
+          subtitle={`Hola, ${session.name}. Cuéntanos qué pasó para enviarlo a la bitácora.`}
+          accent="coral"
+        />
 
-        <View style={styles.card}>
-          <View style={styles.optionGroup}>
-            <Text style={styles.fieldLabel}>Activo o área</Text>
-            {assets.length === 0 ? (
-              <Text style={styles.emptyText}>No hay activos registrados todavía.</Text>
-            ) : (
-              <View style={styles.optionWrap}>
-                {assets.map((asset) => {
-                  const isSelected = asset.id === values.assetId;
+        <SectionCard title="Área afectada" subtitle="El reporte quedará ligado al historial del activo.">
+          {assets.length === 0 ? (
+            <Text style={styles.emptyText}>No hay activos registrados todavía.</Text>
+          ) : (
+            <View style={styles.assetList}>
+              {assets.map((asset) => {
+                const isSelected = asset.id === values.assetId;
 
-                  return (
-                    <Pressable
-                      key={asset.id}
-                      onPress={() => updateValue('assetId', asset.id)}
-                      style={({ pressed }) => [
-                        styles.option,
-                        isSelected && styles.optionSelected,
-                        pressed && styles.pressed,
-                      ]}
-                    >
-                      <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                return (
+                  <Pressable
+                    key={asset.id}
+                    onPress={() => updateValue('assetId', asset.id)}
+                    style={({ pressed }) => [
+                      styles.assetOption,
+                      isSelected && styles.assetOptionSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.assetTopRow}>
+                      <Text style={[styles.assetName, isSelected && styles.assetNameSelected]}>
                         {asset.name}
                       </Text>
-                      <Text style={[styles.optionSubtext, isSelected && styles.optionTextSelected]}>
-                        {asset.location}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </View>
+                      {isSelected ? <StatusChip label="seleccionado" tone="success" /> : null}
+                    </View>
+                    <Text style={[styles.assetLocation, isSelected && styles.assetLocationSelected]}>
+                      {asset.location}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </SectionCard>
 
+        <SectionCard title="Detalle del reporte" subtitle="Mantén el texto breve y útil para el encargado.">
           <AppInput
             label="Título"
             value={values.title}
@@ -164,7 +169,7 @@ export function ResidentReportScreen({
             onPress={handleSubmit}
           />
           <AppButton label="Volver" onPress={onCancel} variant="secondary" />
-        </View>
+        </SectionCard>
       </ScrollView>
     </Screen>
   );
@@ -175,73 +180,47 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.caribeBlue,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
+  assetList: {
     gap: spacing.md,
-    padding: spacing.xl,
-    ...shadow.lift,
   },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: colors.mistGreen,
-    fontSize: 16,
-    lineHeight: 23,
-  },
-  card: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  optionGroup: {
-    gap: spacing.sm,
-  },
-  fieldLabel: {
-    color: colors.umbralInk,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  optionWrap: {
-    gap: spacing.sm,
-  },
-  option: {
-    backgroundColor: colors.mistGreen,
-    borderColor: colors.deepCanopy,
-    borderRadius: radius.lg,
+  assetOption: {
+    backgroundColor: colors.sand,
+    borderColor: colors.line,
+    borderRadius: radius.xl,
     borderWidth: 1,
     gap: spacing.xs,
-    minHeight: 62,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    minHeight: 82,
+    padding: spacing.lg,
   },
-  optionSelected: {
-    backgroundColor: colors.isthmusTeal,
-    borderColor: colors.isthmusTeal,
+  assetOptionSelected: {
+    backgroundColor: colors.teal,
+    borderColor: colors.teal,
   },
-  optionText: {
-    color: colors.deepCanopy,
-    fontSize: 15,
+  assetTopRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    justifyContent: 'space-between',
+  },
+  assetName: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: 0,
+    lineHeight: 22,
   },
-  optionSubtext: {
+  assetNameSelected: {
+    color: colors.ivory,
+  },
+  assetLocation: {
     color: colors.graphite,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
   },
-  optionTextSelected: {
-    color: colors.cardIvory,
+  assetLocationSelected: {
+    color: colors.tealSoft,
   },
   emptyText: {
     color: colors.graphite,
@@ -249,14 +228,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   notesInput: {
-    minHeight: 96,
+    minHeight: 104,
     paddingTop: spacing.md,
   },
   message: {
-    color: colors.coralAlerta,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.md,
+    color: colors.coral,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     lineHeight: 20,
+    padding: spacing.md,
   },
   pressed: {
     opacity: 0.82,

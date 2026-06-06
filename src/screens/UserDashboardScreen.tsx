@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { AppButton } from '../components/AppButton';
+import { Alert, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { HeaderHero } from '../components/HeaderHero';
+import { QuickActionCard } from '../components/QuickActionCard';
+import { RiskCard } from '../components/RiskCard';
 import { Screen } from '../components/Screen';
-import { StatCard } from '../components/StatCard';
+import { SectionCard } from '../components/SectionCard';
 import { StatusChip } from '../components/StatusChip';
 import { getAssets, getEvents } from '../services/storage';
 import {
@@ -11,7 +13,7 @@ import {
   getEventsForAssets,
 } from '../services/statsService';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { radius, spacing } from '../theme/spacing';
 import { Asset, AssetPriority, AssetStatus, OperationalEvent, Session } from '../types';
 
 type UserDashboardScreenProps = {
@@ -38,6 +40,22 @@ function formatCost(value: number) {
   return `B/. ${value.toFixed(2)}`;
 }
 
+function getAssetSeverity(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
+  if (asset.status === 'Fuera de servicio' || asset.priority === 'Crítica') {
+    return 'critical';
+  }
+
+  if (asset.status === 'En revisión' || asset.priority === 'Alta') {
+    return 'high';
+  }
+
+  if (asset.priority === 'Media') {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
 export function UserDashboardScreen({
   session,
   onCreateAsset,
@@ -48,7 +66,7 @@ export function UserDashboardScreen({
 
   useEffect(() => {
     async function loadDashboardData() {
-      const [storedAssets, storedEvents] = await Promise.all([getAssets(), getEvents()]);
+      const storedAssets = await getAssets();
       const currentAssets = getAssetsForUser(storedAssets, session.userId);
 
       setAssets(currentAssets);
@@ -61,63 +79,124 @@ export function UserDashboardScreen({
 
   return (
     <Screen>
-      <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <StatusChip label="manager" tone="success" />
-          <Text style={styles.title}>Panel operativo</Text>
-          <Text style={styles.subtitle}>Hola, {session.name}. Este es el resumen local del PH.</Text>
-        </View>
+        <HeaderHero
+          label="PH Bahía Central"
+          title={`Hola, ${session.name}`}
+          subtitle="Control operativo local para activos, mantenimientos e incidencias."
+        >
+          <View style={styles.heroStatsGrid}>
+            <HeroStatTile label="Activos" value={stats.totalAssets} />
+            <HeroStatTile label="Eventos" value={stats.operationalEvents} />
+            <HeroStatTile label="Pendientes" value={stats.openPendingEvents} tone="gold" />
+            <HeroStatTile label="Costos" value={formatCost(stats.accumulatedCost)} />
+            <HeroStatTile label="Críticos" value={stats.criticalAssets} tone="coral" />
+            <HeroStatTile label="Revisiones" value={stats.upcomingReviews} tone="blue" />
+          </View>
+        </HeaderHero>
 
-        <View style={styles.statsGrid}>
-          <StatCard label="Total de activos" value={stats.totalAssets} helper="Áreas y equipos bajo tu gestión." />
-          <StatCard label="Eventos operativos" value={stats.operationalEvents} helper="Historial ligado a tus activos." />
-          <StatCard label="Pendientes abiertos" value={stats.openPendingEvents} helper="Pendiente o en proceso." />
-          <StatCard label="Costo acumulado" value={formatCost(stats.accumulatedCost)} helper="Suma de eventos registrados." />
-          <StatCard label="Activos críticos" value={stats.criticalAssets} helper="Prioridad marcada como crítica." />
-          <StatCard label="Próximas revisiones" value={stats.upcomingReviews} helper="Eventos con revisión futura." />
-        </View>
-
-        <View style={styles.actionRow}>
-          <AppButton label="Nuevo activo" onPress={onCreateAsset} />
+        <View style={styles.actionGrid}>
+          <View style={styles.actionRow}>
+            <QuickActionCard
+              title="Nuevo activo"
+              body="Registra equipo o área"
+              symbol="+"
+              variant="primary"
+              onPress={onCreateAsset}
+            />
+            <QuickActionCard
+              title="Pendientes"
+              body={`${stats.openPendingEvents} abiertos`}
+              symbol="!"
+              variant="gold"
+              onPress={() =>
+                Alert.alert('Pendientes abiertos', 'Se calculan desde eventos pendientes o en proceso.')
+              }
+            />
+          </View>
+          <View style={styles.actionRow}>
+            <QuickActionCard
+              title="Activos críticos"
+              body={`${stats.criticalAssets} con prioridad crítica`}
+              symbol="C"
+              variant="danger"
+              onPress={() =>
+                Alert.alert('Activos críticos', 'Se calculan desde activos con prioridad crítica.')
+              }
+            />
+            <QuickActionCard
+              title="Cerrar sesión"
+              body="Salir de Umbral"
+              symbol="X"
+              variant="neutral"
+              onPress={onLogout}
+            />
+          </View>
         </View>
 
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Mis activos</Text>
+          <View>
+            <Text style={styles.sectionTitle}>Mis activos</Text>
+            <Text style={styles.sectionSubtitle}>Bitácora principal del PH</Text>
+          </View>
           <Text style={styles.count}>{assets.length} activos</Text>
         </View>
 
         {assets.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Todavía no hay activos</Text>
+          <SectionCard
+            title="Todavía no hay activos"
+            subtitle="Cuando registres bombas, elevadores, garitas o áreas comunes, aparecerán aquí."
+            tone="goldSoft"
+          >
             <Text style={styles.emptyText}>
-              Cuando registres bombas, elevadores, garitas o áreas comunes, aparecerán aquí.
+              Usa Nuevo activo para iniciar la bitácora operativa del PH.
             </Text>
-          </View>
+          </SectionCard>
         ) : (
           assets.map((asset) => (
-            <Pressable
+            <RiskCard
               key={asset.id}
+              title={asset.name}
+              subtitle={`${asset.category} · ${asset.location}`}
+              meta={`${countEventsForAsset(managerEvents, asset.id)} eventos registrados`}
+              severity={getAssetSeverity(asset)}
               onPress={() => onOpenAsset(asset)}
-              style={({ pressed }) => [styles.assetCard, pressed && styles.pressed]}
+              actionLabel="Historial >"
             >
               <View style={styles.assetChipRow}>
                 <StatusChip label={asset.status} tone={statusTone[asset.status]} />
                 <StatusChip label={asset.priority} tone={priorityTone[asset.priority]} />
               </View>
-              <Text style={styles.assetName}>{asset.name}</Text>
-              <Text style={styles.assetMeta}>{asset.category}</Text>
-              <Text style={styles.assetMeta}>Ubicación: {asset.location}</Text>
-              <Text style={styles.assetHint}>
-                {countEventsForAsset(managerEvents, asset.id)} eventos registrados. Toca para ver historial.
-              </Text>
-            </Pressable>
+            </RiskCard>
           ))
         )}
-
-        <AppButton label="Cerrar sesión" onPress={onLogout} variant="secondary" />
       </ScrollView>
     </Screen>
+  );
+}
+
+type HeroStatTileProps = {
+  label: string;
+  value: string | number;
+  tone?: 'teal' | 'gold' | 'coral' | 'blue';
+};
+
+function HeroStatTile({ label, value, tone = 'teal' }: HeroStatTileProps) {
+  const toneStyle =
+    tone === 'gold'
+      ? styles.goldTile
+      : tone === 'coral'
+        ? styles.coralTile
+        : tone === 'blue'
+          ? styles.blueTile
+          : styles.tealTile;
+
+  return (
+    <View style={[styles.heroStatTile, toneStyle]}>
+      <Text style={styles.heroStatValue}>{value}</Text>
+      <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -150,100 +229,81 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.guayacanGold,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
+  heroStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.md,
-    padding: spacing.xl,
-    ...shadow.lift,
   },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 32,
+  heroStatTile: {
+    borderColor: 'rgba(255, 248, 234, 0.18)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    minHeight: 84,
+    padding: spacing.md,
+    width: '47%',
+  },
+  tealTile: {
+    backgroundColor: 'rgba(14, 124, 114, 0.62)',
+  },
+  goldTile: {
+    backgroundColor: 'rgba(242, 184, 75, 0.88)',
+  },
+  coralTile: {
+    backgroundColor: 'rgba(231, 111, 81, 0.88)',
+  },
+  blueTile: {
+    backgroundColor: 'rgba(43, 167, 201, 0.82)',
+  },
+  heroStatValue: {
+    color: colors.ivory,
+    fontSize: 25,
     fontWeight: '800',
     letterSpacing: 0,
   },
-  subtitle: {
-    color: colors.mistGreen,
-    fontSize: 16,
-    lineHeight: 23,
+  heroStatLabel: {
+    color: colors.mist,
+    fontSize: 12,
+    fontWeight: '800',
+    marginTop: spacing.xs,
+    textTransform: 'uppercase',
   },
-  statsGrid: {
+  actionGrid: {
     gap: spacing.md,
   },
   actionRow: {
+    flexDirection: 'row',
     gap: spacing.md,
   },
   listHeader: {
-    alignItems: 'center',
+    alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    color: colors.umbralInk,
-    fontSize: 22,
+    color: colors.ink,
+    fontSize: 24,
     fontWeight: '800',
     letterSpacing: 0,
+  },
+  sectionSubtitle: {
+    color: colors.graphite,
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: spacing.xs,
   },
   count: {
     color: colors.graphite,
     fontSize: 14,
-    fontWeight: '700',
-  },
-  emptyState: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  emptyTitle: {
-    color: colors.umbralInk,
-    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: 0,
   },
   emptyText: {
-    color: colors.graphite,
+    color: colors.canopy,
     fontSize: 15,
     lineHeight: 22,
-    marginTop: spacing.sm,
-  },
-  assetCard: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
-    ...shadow.soft,
   },
   assetChipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  assetName: {
-    color: colors.umbralInk,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  assetMeta: {
-    color: colors.deepCanopy,
-    fontSize: 15,
-    lineHeight: 21,
-  },
-  assetHint: {
-    color: colors.graphite,
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: spacing.xs,
-  },
-  pressed: {
-    opacity: 0.82,
   },
 });

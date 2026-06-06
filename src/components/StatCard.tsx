@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { colors } from '../theme/colors';
 import { radius, shadow, spacing } from '../theme/spacing';
 
@@ -6,11 +6,12 @@ type StatCardProps = {
   label: string;
   value: string | number;
   helper?: string;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function StatCard({ label, value, helper }: StatCardProps) {
+export function StatCard({ label, value, helper, style }: StatCardProps) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, style]}>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.value}>{value}</Text>
       {helper ? <Text style={styles.helper}>{helper}</Text> : null}
@@ -24,7 +25,7 @@ const styles = StyleSheet.create({
     borderColor: colors.mistGreen,
     borderRadius: radius.lg,
     borderWidth: 1,
-    minHeight: 118,
+    minHeight: 126,
     padding: spacing.lg,
     ...shadow.soft,
   },
@@ -35,7 +36,7 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.umbralInk,
-    fontSize: 30,
+    fontSize: 42,
     fontWeight: '800',
     letterSpacing: 0,
     marginTop: spacing.xs,

@@ -23,7 +23,7 @@ import {
   saveUsers,
 } from './src/services/storage';
 import { colors } from './src/theme/colors';
-import { shadow, spacing } from './src/theme/spacing';
+import { radius, shadow, spacing } from './src/theme/spacing';
 import { Asset, OperationalEvent, Session, User } from './src/types';
 
 type AuthRoute = 'login' | 'register';
@@ -47,9 +47,32 @@ export default function App() {
     async function prepareApp() {
       await initializeStorage();
       const restoredSession = await getCurrentSession();
+      let validSession: Session | null = null;
+
+      if (restoredSession) {
+        const users = await getUsers();
+        const sessionUser = users.find(
+          (user) =>
+            user.id === restoredSession.userId &&
+            user.email.trim().toLowerCase() === restoredSession.email.trim().toLowerCase() &&
+            user.role === restoredSession.role,
+        );
+
+        if (sessionUser) {
+          validSession = {
+            userId: sessionUser.id,
+            name: sessionUser.name,
+            email: sessionUser.email,
+            role: sessionUser.role,
+            startedAt: restoredSession.startedAt,
+          };
+        } else {
+          await clearCurrentSession();
+        }
+      }
 
       if (isMounted) {
-        setSession(restoredSession);
+        setSession(validSession);
         setIsReady(true);
       }
     }
@@ -522,6 +545,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.deepCanopy,
     borderBottomColor: colors.guayacanGold,
     borderBottomWidth: 6,
+    borderRadius: radius.xl,
     marginTop: spacing.xl,
     padding: spacing.xl,
     ...shadow.lift,

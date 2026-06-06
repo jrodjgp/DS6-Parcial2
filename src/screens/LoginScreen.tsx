@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
+import { HeaderHero } from '../components/HeaderHero';
 import { Screen } from '../components/Screen';
+import { SectionCard } from '../components/SectionCard';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { spacing } from '../theme/spacing';
 
 type LoginScreenProps = {
   onLogin: (email: string, password: string) => Promise<string | null>;
@@ -37,14 +39,17 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
   return (
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
-      <View style={styles.hero}>
-        <Text style={styles.kicker}>Acceso operativo</Text>
-        <Text style={styles.title}>Umbral</Text>
-        <Text style={styles.subtitle}>Bitácora operativa para PHs</Text>
-      </View>
+      <HeaderHero
+        label="PH Bahía Central"
+        title="Umbral"
+        subtitle="La memoria operativa de tu PH"
+        centered
+      />
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Iniciar sesión</Text>
+      <SectionCard
+        title="Iniciar sesión"
+        subtitle="Acceso local para administración, residentes y demostración académica."
+      >
         <AppInput
           label="Correo"
           value={email}
@@ -72,60 +77,22 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
           onPress={onGoToRegister}
           variant="secondary"
         />
-      </View>
+      </SectionCard>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.guayacanGold,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    ...shadow.lift,
-  },
-  kicker: {
-    color: colors.mistGreen,
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-    marginBottom: spacing.md,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 42,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: colors.mistGreen,
-    fontSize: 18,
-    lineHeight: 25,
-    marginTop: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    marginTop: spacing.xl,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
-  cardTitle: {
-    color: colors.umbralInk,
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
   error: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.coralAlerta,
+    borderRadius: 18,
+    borderWidth: 1,
     color: colors.coralAlerta,
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
+    marginTop: spacing.xl,
+    padding: spacing.md,
   },
 });

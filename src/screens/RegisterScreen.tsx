@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
+import { HeaderHero } from '../components/HeaderHero';
 import { Screen } from '../components/Screen';
+import { SectionCard } from '../components/SectionCard';
 import { colors } from '../theme/colors';
-import { radius, shadow, spacing } from '../theme/spacing';
+import { spacing } from '../theme/spacing';
 
 type RegisterScreenProps = {
   onRegister: (name: string, email: string, password: string) => Promise<string | null>;
@@ -38,13 +40,14 @@ export function RegisterScreen({ onRegister, onGoToLogin }: RegisterScreenProps)
   return (
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
-      <View style={styles.header}>
-        <Text style={styles.kicker}>Nuevo encargado</Text>
-        <Text style={styles.title}>Crear cuenta</Text>
-        <Text style={styles.subtitle}>El registro crea un usuario manager para pruebas académicas.</Text>
-      </View>
+      <HeaderHero
+        label="Nuevo encargado"
+        title="Crear cuenta"
+        subtitle="El registro crea un usuario manager para pruebas académicas."
+        accent="blue"
+      />
 
-      <View style={styles.card}>
+      <SectionCard title="Datos de acceso" subtitle="Usa un correo único para entrar al panel operativo.">
         <AppInput
           label="Nombre"
           value={name}
@@ -74,54 +77,22 @@ export function RegisterScreen({ onRegister, onGoToLogin }: RegisterScreenProps)
           onPress={handleSubmit}
         />
         <AppButton label="Volver al login" onPress={onGoToLogin} variant="secondary" />
-      </View>
+      </SectionCard>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.deepCanopy,
-    borderBottomColor: colors.caribeBlue,
-    borderBottomWidth: 6,
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    ...shadow.lift,
-  },
-  kicker: {
-    color: colors.mistGreen,
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 0,
-    marginBottom: spacing.md,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: colors.cardIvory,
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: 0,
-  },
-  subtitle: {
-    color: colors.mistGreen,
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: spacing.sm,
-  },
-  card: {
-    backgroundColor: colors.cardIvory,
-    borderColor: colors.mistGreen,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.lg,
-    marginTop: spacing.xl,
-    padding: spacing.xl,
-    ...shadow.soft,
-  },
   error: {
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.coralAlerta,
+    borderRadius: 18,
+    borderWidth: 1,
     color: colors.coralAlerta,
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
+    marginTop: spacing.xl,
+    padding: spacing.md,
   },
 });
