@@ -8,6 +8,7 @@ import { EventFormScreen, EventFormValues } from './src/screens/EventFormScreen'
 import { LoginScreen } from './src/screens/LoginScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
 import { ResidentHomeScreen } from './src/screens/ResidentHomeScreen';
+import { ResidentReportScreen, ResidentReportValues } from './src/screens/ResidentReportScreen';
 import { UserDashboardScreen } from './src/screens/UserDashboardScreen';
 import {
   clearCurrentSession,
@@ -31,11 +32,13 @@ type ManagerRoute =
   | { name: 'assetDetail'; asset: Asset }
   | { name: 'assetForm'; asset?: Asset }
   | { name: 'eventForm'; asset: Asset; event?: OperationalEvent };
+type ResidentRoute = 'home' | 'report';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [authRoute, setAuthRoute] = useState<AuthRoute>('login');
   const [managerRoute, setManagerRoute] = useState<ManagerRoute>({ name: 'dashboard' });
+  const [residentRoute, setResidentRoute] = useState<ResidentRoute>('home');
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -122,6 +125,7 @@ export default function App() {
     setSession(null);
     setAuthRoute('login');
     setManagerRoute({ name: 'dashboard' });
+    setResidentRoute('home');
   }
 
   async function handleSaveAsset(values: AssetFormValues, asset?: Asset): Promise<string | null> {
@@ -360,6 +364,53 @@ export default function App() {
     return null;
   }
 
+  async function handleSaveResidentReport(values: ResidentReportValues): Promise<string | null> {
+    if (!session || session.role !== 'resident') {
+      return 'La sesión del residente no está disponible.';
+    }
+
+    const storedAssets = await getAssets();
+    const selectedAsset = storedAssets.find((asset) => asset.id === values.assetId);
+
+    if (!selectedAsset) {
+      return 'Selecciona un activo o área existente.';
+    }
+
+    const now = new Date();
+    const reportDate = now.toISOString().split('T')[0];
+    const cleanDescription = values.description.trim();
+    const cleanLocationDetail = values.locationDetail.trim();
+    const storedEvents = await getEvents();
+    const residentReport: OperationalEvent = {
+      id: `event-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+      assetId: selectedAsset.id,
+      type: 'Incidencia',
+      title: values.title.trim(),
+      description: `${cleanDescription}\n\nDetalle de ubicación: ${cleanLocationDetail}`,
+      date: reportDate,
+      cost: 0,
+      status: 'Pendiente',
+      provider: '',
+      responsible: session.name,
+      createdBy: session.userId,
+      nextReviewDate: '',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    await saveEvents([...storedEvents, residentReport]);
+
+    const verifiedEvents = await getEvents();
+    const wasCreated = verifiedEvents.some((event) => event.id === residentReport.id);
+
+    if (!wasCreated) {
+      return 'No se pudo enviar el reporte. Reinicia Expo Go y vuelve a intentar.';
+    }
+
+    setResidentRoute('home');
+    return null;
+  }
+
   if (!isReady) {
     return (
       <Screen>
@@ -395,7 +446,23 @@ export default function App() {
   }
 
   if (session.role === 'resident') {
-    return <ResidentHomeScreen session={session} onLogout={handleLogout} />;
+    if (residentRoute === 'report') {
+      return (
+        <ResidentReportScreen
+          session={session}
+          onCancel={() => setResidentRoute('home')}
+          onSubmit={handleSaveResidentReport}
+        />
+      );
+    }
+
+    return (
+      <ResidentHomeScreen
+        session={session}
+        onLogout={handleLogout}
+        onReportIncident={() => setResidentRoute('report')}
+      />
+    );
   }
 
   if (managerRoute.name === 'assetForm') {
