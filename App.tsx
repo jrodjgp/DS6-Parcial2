@@ -84,7 +84,7 @@ export default function App() {
     };
   }, []);
 
-  async function startSession(user: User) {
+  async function startSession(user: User): Promise<boolean> {
     const newSession: Session = {
       userId: user.id,
       name: user.name,
@@ -93,8 +93,14 @@ export default function App() {
       startedAt: new Date().toISOString(),
     };
 
-    await saveCurrentSession(newSession);
+    const sessionSaved = await saveCurrentSession(newSession);
+
+    if (!sessionSaved) {
+      return false;
+    }
+
     setSession(newSession);
+    return true;
   }
 
   async function handleLogin(email: string, password: string): Promise<string | null> {
@@ -109,7 +115,12 @@ export default function App() {
       return 'Credenciales inválidas. Revisa el correo y la contraseña.';
     }
 
-    await startSession(user);
+    const sessionSaved = await startSession(user);
+
+    if (!sessionSaved) {
+      return 'No se pudo guardar la sesión local. Reinicia Expo Go y vuelve a intentar.';
+    }
+
     return null;
   }
 
@@ -138,8 +149,18 @@ export default function App() {
       createdAt: now,
     };
 
-    await saveUsers([...users, newUser]);
-    await startSession(newUser);
+    const usersSaved = await saveUsers([...users, newUser]);
+
+    if (!usersSaved) {
+      return 'No se pudo crear la cuenta. Reinicia Expo Go y vuelve a intentar.';
+    }
+
+    const sessionSaved = await startSession(newUser);
+
+    if (!sessionSaved) {
+      return 'La cuenta fue creada, pero no se pudo guardar la sesión local.';
+    }
+
     return null;
   }
 
@@ -186,21 +207,13 @@ export default function App() {
         updatedAt: now,
       };
 
-      await saveAssets(
+      const assetsSaved = await saveAssets(
         storedAssets.map((storedAsset) =>
           storedAsset.id === asset.id ? updatedAsset : storedAsset,
         ),
       );
 
-      const verifiedAssets = await getAssets();
-      const wasUpdated = verifiedAssets.some(
-        (storedAsset) =>
-          storedAsset.id === asset.id &&
-          storedAsset.name === updatedAsset.name &&
-          storedAsset.location === updatedAsset.location,
-      );
-
-      if (!wasUpdated) {
+      if (!assetsSaved) {
         return 'No se pudo guardar el cambio. Reinicia Expo Go y vuelve a intentar.';
       }
 
@@ -227,12 +240,9 @@ export default function App() {
       updatedAt: now,
     };
 
-    await saveAssets([...storedAssets, newAsset]);
+    const assetsSaved = await saveAssets([...storedAssets, newAsset]);
 
-    const verifiedAssets = await getAssets();
-    const wasCreated = verifiedAssets.some((storedAsset) => storedAsset.id === newAsset.id);
-
-    if (!wasCreated) {
+    if (!assetsSaved) {
       return 'No se pudo crear el activo. Reinicia Expo Go y vuelve a intentar.';
     }
 
@@ -280,21 +290,13 @@ export default function App() {
         updatedAt: now,
       };
 
-      await saveEvents(
+      const eventsSaved = await saveEvents(
         storedEvents.map((storedEvent) =>
           storedEvent.id === event.id ? updatedEvent : storedEvent,
         ),
       );
 
-      const verifiedEvents = await getEvents();
-      const wasUpdated = verifiedEvents.some(
-        (storedEvent) =>
-          storedEvent.id === event.id &&
-          storedEvent.title === updatedEvent.title &&
-          storedEvent.status === updatedEvent.status,
-      );
-
-      if (!wasUpdated) {
+      if (!eventsSaved) {
         return 'No se pudo guardar el evento. Reinicia Expo Go y vuelve a intentar.';
       }
 
@@ -319,12 +321,9 @@ export default function App() {
       updatedAt: now,
     };
 
-    await saveEvents([...storedEvents, newEvent]);
+    const eventsSaved = await saveEvents([...storedEvents, newEvent]);
 
-    const verifiedEvents = await getEvents();
-    const wasCreated = verifiedEvents.some((storedEvent) => storedEvent.id === newEvent.id);
-
-    if (!wasCreated) {
+    if (!eventsSaved) {
       return 'No se pudo crear el evento. Reinicia Expo Go y vuelve a intentar.';
     }
 
@@ -347,12 +346,9 @@ export default function App() {
     const storedEvents = await getEvents();
     const nextEvents = storedEvents.filter((storedEvent) => storedEvent.id !== event.id);
 
-    await saveEvents(nextEvents);
+    const eventsSaved = await saveEvents(nextEvents);
 
-    const verifiedEvents = await getEvents();
-    const eventStillExists = verifiedEvents.some((storedEvent) => storedEvent.id === event.id);
-
-    if (eventStillExists) {
+    if (!eventsSaved) {
       return 'No se pudo eliminar el evento. Reinicia Expo Go y vuelve a intentar.';
     }
 
@@ -373,13 +369,12 @@ export default function App() {
     const nextAssets = storedAssets.filter((storedAsset) => storedAsset.id !== asset.id);
     const nextEvents = storedEvents.filter((event) => event.assetId !== asset.id);
 
-    await Promise.all([saveAssets(nextAssets), saveEvents(nextEvents)]);
+    const [assetsSaved, eventsSaved] = await Promise.all([
+      saveAssets(nextAssets),
+      saveEvents(nextEvents),
+    ]);
 
-    const [verifiedAssets, verifiedEvents] = await Promise.all([getAssets(), getEvents()]);
-    const assetStillExists = verifiedAssets.some((storedAsset) => storedAsset.id === asset.id);
-    const linkedEventsStillExist = verifiedEvents.some((event) => event.assetId === asset.id);
-
-    if (assetStillExists || linkedEventsStillExist) {
+    if (!assetsSaved || !eventsSaved) {
       return 'No se pudo eliminar el activo por completo. Reinicia Expo Go y vuelve a intentar.';
     }
 
@@ -421,12 +416,9 @@ export default function App() {
       updatedAt: now.toISOString(),
     };
 
-    await saveEvents([...storedEvents, residentReport]);
+    const eventsSaved = await saveEvents([...storedEvents, residentReport]);
 
-    const verifiedEvents = await getEvents();
-    const wasCreated = verifiedEvents.some((event) => event.id === residentReport.id);
-
-    if (!wasCreated) {
+    if (!eventsSaved) {
       return 'No se pudo enviar el reporte. Reinicia Expo Go y vuelve a intentar.';
     }
 

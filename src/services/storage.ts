@@ -145,19 +145,23 @@ function isOperationalEvent(value: unknown): value is OperationalEvent {
   );
 }
 
-async function writeJson<T>(key: string, value: T): Promise<void> {
+async function writeJson<T>(key: string, value: T): Promise<boolean> {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
     // Storage failures should not crash the app during academic testing.
+    return false;
   }
 }
 
-async function removeKey(key: string): Promise<void> {
+async function removeKey(key: string): Promise<boolean> {
   try {
     await AsyncStorage.removeItem(key);
+    return true;
   } catch {
     // Removing a missing or damaged key should also stay safe.
+    return false;
   }
 }
 
@@ -186,8 +190,8 @@ export async function getUsers(): Promise<User[]> {
   return getValidArray<User>(STORAGE_KEYS.users, isUser);
 }
 
-export async function saveUsers(users: User[]): Promise<void> {
-  await writeJson(STORAGE_KEYS.users, users);
+export async function saveUsers(users: User[]): Promise<boolean> {
+  return writeJson(STORAGE_KEYS.users, users);
 }
 
 export async function getCurrentSession(): Promise<Session | null> {
@@ -200,44 +204,26 @@ export async function getCurrentSession(): Promise<Session | null> {
   return session;
 }
 
-export async function saveCurrentSession(session: Session): Promise<void> {
-  await writeJson(STORAGE_KEYS.session, session);
+export async function saveCurrentSession(session: Session): Promise<boolean> {
+  return writeJson(STORAGE_KEYS.session, session);
 }
 
-export async function clearCurrentSession(): Promise<void> {
-  await removeKey(STORAGE_KEYS.session);
+export async function clearCurrentSession(): Promise<boolean> {
+  return removeKey(STORAGE_KEYS.session);
 }
 
 export async function getAssets(): Promise<Asset[]> {
   return getValidArray<Asset>(STORAGE_KEYS.assets, isAsset);
 }
 
-export async function saveAssets(assets: Asset[]): Promise<void> {
-  await writeJson(STORAGE_KEYS.assets, assets);
+export async function saveAssets(assets: Asset[]): Promise<boolean> {
+  return writeJson(STORAGE_KEYS.assets, assets);
 }
 
 export async function getEvents(): Promise<OperationalEvent[]> {
   return getValidArray<OperationalEvent>(STORAGE_KEYS.events, isOperationalEvent);
 }
 
-export async function saveEvents(events: OperationalEvent[]): Promise<void> {
-  await writeJson(STORAGE_KEYS.events, events);
-}
-
-export async function clearAllAppData(): Promise<void> {
-  try {
-    await AsyncStorage.multiRemove([
-      STORAGE_KEYS.users,
-      STORAGE_KEYS.assets,
-      STORAGE_KEYS.events,
-      STORAGE_KEYS.session,
-    ]);
-  } catch {
-    await Promise.all([
-      removeKey(STORAGE_KEYS.users),
-      removeKey(STORAGE_KEYS.assets),
-      removeKey(STORAGE_KEYS.events),
-      removeKey(STORAGE_KEYS.session),
-    ]);
-  }
+export async function saveEvents(events: OperationalEvent[]): Promise<boolean> {
+  return writeJson(STORAGE_KEYS.events, events);
 }

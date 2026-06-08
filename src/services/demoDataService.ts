@@ -33,7 +33,7 @@ function getDemoDates() {
   };
 }
 
-export async function loadDemoData(): Promise<void> {
+export async function loadDemoData(): Promise<boolean> {
   const { now, today, nextReviewDate } = getDemoDates();
   const [users, assets, events] = await Promise.all([getUsers(), getAssets(), getEvents()]);
 
@@ -186,15 +186,21 @@ export async function loadDemoData(): Promise<void> {
     ...demoEvents,
   ];
 
-  await Promise.all([saveUsers(nextUsers), saveAssets(nextAssets), saveEvents(nextEvents)]);
+  const results = await Promise.all([
+    saveUsers(nextUsers),
+    saveAssets(nextAssets),
+    saveEvents(nextEvents),
+  ]);
+
+  return results.every(Boolean);
 }
 
-export async function clearDemoData(): Promise<void> {
+export async function clearDemoData(): Promise<boolean> {
   const [users, assets, events] = await Promise.all([getUsers(), getAssets(), getEvents()]);
   const demoAssetIds = Object.values(DEMO_ASSET_IDS);
   const demoEventIds = Object.values(DEMO_EVENT_IDS);
 
-  await Promise.all([
+  const results = await Promise.all([
     saveUsers(
       users.filter(
         (user) =>
@@ -212,4 +218,6 @@ export async function clearDemoData(): Promise<void> {
       ),
     ),
   ]);
+
+  return results.every(Boolean);
 }

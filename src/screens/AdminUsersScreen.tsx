@@ -107,7 +107,14 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
     };
 
     const nextUsers = [...users, newUser];
-    await saveUsers(nextUsers);
+    const usersSaved = await saveUsers(nextUsers);
+
+    if (!usersSaved) {
+      setMessage('No se pudo crear el usuario. Reinicia Expo Go y vuelve a intentar.');
+      setIsSaving(false);
+      return;
+    }
+
     setUsers(nextUsers);
     setName('');
     setEmail('');
@@ -137,19 +144,37 @@ export function AdminUsersScreen({ session, onLogout }: AdminUsersScreenProps) {
 
   async function deleteUser(userId: string) {
     const nextUsers = users.filter((user) => user.id !== userId);
-    await saveUsers(nextUsers);
+    const usersSaved = await saveUsers(nextUsers);
+
+    if (!usersSaved) {
+      setMessage('No se pudo eliminar el usuario. Reinicia Expo Go y vuelve a intentar.');
+      return;
+    }
+
     setUsers(nextUsers);
     setMessage('Usuario eliminado. Ya no podrá iniciar sesión.');
   }
 
   async function handleLoadDemo() {
-    await loadDemoData();
+    const demoSaved = await loadDemoData();
+
+    if (!demoSaved) {
+      setMessage('No se pudo cargar el demo. Reinicia Expo Go y vuelve a intentar.');
+      return;
+    }
+
     await refreshUsers();
     setMessage('Demo cargada: manager, residente, activos y eventos listos.');
   }
 
   async function handleClearDemo() {
-    await clearDemoData();
+    const demoCleared = await clearDemoData();
+
+    if (!demoCleared) {
+      setMessage('No se pudo limpiar el demo. Reinicia Expo Go y vuelve a intentar.');
+      return;
+    }
+
     await refreshUsers();
     setMessage('Demo limpiada. El administrador del sistema se conserva.');
   }
