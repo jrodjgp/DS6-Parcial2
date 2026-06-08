@@ -17,6 +17,17 @@ export type Session = {
   startedAt: string;
 };
 
+export type PropertyProfile = {
+  name: string;
+  address: string;
+  contactName: string;
+  contactPhone: string;
+  towers: string;
+  units: string;
+  notes: string;
+  updatedAt: string;
+};
+
 export type AssetStatus = 'Operativo' | 'En revisión' | 'Fuera de servicio';
 
 export type AssetPriority = 'Baja' | 'Media' | 'Alta' | 'Crítica';
@@ -59,6 +70,7 @@ export type OperationalEvent = {
   provider: string;
   responsible: string;
   createdBy: string;
+  managerResponse?: string;
   nextReviewDate: string;
   createdAt: string;
   updatedAt: string;

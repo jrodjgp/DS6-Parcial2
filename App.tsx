@@ -2,43 +2,65 @@ import { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { Screen } from './src/components/Screen';
 import { AdminUsersScreen } from './src/screens/AdminUsersScreen';
+import { AlertCenterScreen } from './src/screens/AlertCenterScreen';
 import { AssetDetailScreen } from './src/screens/AssetDetailScreen';
 import { AssetFormScreen, AssetFormValues } from './src/screens/AssetFormScreen';
 import { EventFormScreen, EventFormValues } from './src/screens/EventFormScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { PropertySettingsScreen } from './src/screens/PropertySettingsScreen';
 import { RegisterScreen } from './src/screens/RegisterScreen';
+import { ReportPreviewScreen } from './src/screens/ReportPreviewScreen';
 import { ResidentHomeScreen } from './src/screens/ResidentHomeScreen';
 import { ResidentReportScreen, ResidentReportValues } from './src/screens/ResidentReportScreen';
+import { ResidentReportsScreen } from './src/screens/ResidentReportsScreen';
 import { UserDashboardScreen } from './src/screens/UserDashboardScreen';
 import {
   clearCurrentSession,
   getAssets,
   getCurrentSession,
   getEvents,
+  getPropertyProfile,
   getUsers,
   initializeStorage,
   saveAssets,
   saveCurrentSession,
   saveEvents,
+  savePropertyProfile,
   saveUsers,
 } from './src/services/storage';
 import { colors } from './src/theme/colors';
 import { radius, shadow, spacing } from './src/theme/spacing';
-import { Asset, OperationalEvent, Session, User } from './src/types';
+import { Asset, OperationalEvent, PropertyProfile, Session, User } from './src/types';
+import { isValidDateText } from './src/utils/dateUtils';
 
 type AuthRoute = 'login' | 'register';
 type ManagerRoute =
   | { name: 'dashboard' }
+  | { name: 'alertCenter' }
+  | { name: 'propertySettings' }
+  | { name: 'reportPreview' }
   | { name: 'assetDetail'; asset: Asset }
   | { name: 'assetForm'; asset?: Asset }
   | { name: 'eventForm'; asset: Asset; event?: OperationalEvent };
-type ResidentRoute = 'home' | 'report';
+type ResidentRoute = 'home' | 'report' | 'reports';
+
+const fallbackPropertyProfile: PropertyProfile = {
+  name: 'PH Bahía Central',
+  address: 'Ciudad de Panamá',
+  contactName: 'Administración Umbral',
+  contactPhone: '0000-0000',
+  towers: '2',
+  units: '96',
+  notes: 'Perfil local del PH.',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
   const [authRoute, setAuthRoute] = useState<AuthRoute>('login');
   const [managerRoute, setManagerRoute] = useState<ManagerRoute>({ name: 'dashboard' });
   const [residentRoute, setResidentRoute] = useState<ResidentRoute>('home');
+  const [propertyProfile, setPropertyProfile] = useState<PropertyProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -46,6 +68,7 @@ export default function App() {
 
     async function prepareApp() {
       await initializeStorage();
+      const storedPropertyProfile = await getPropertyProfile();
       const restoredSession = await getCurrentSession();
       let validSession: Session | null = null;
 
@@ -72,6 +95,7 @@ export default function App() {
       }
 
       if (isMounted) {
+        setPropertyProfile(storedPropertyProfile);
         setSession(validSession);
         setIsReady(true);
       }
@@ -172,6 +196,17 @@ export default function App() {
     setResidentRoute('home');
   }
 
+  async function handleSavePropertyProfile(profile: PropertyProfile): Promise<string | null> {
+    const profileSaved = await savePropertyProfile(profile);
+
+    if (!profileSaved) {
+      return 'No se pudo guardar el perfil del PH. Reinicia Expo Go y vuelve a intentar.';
+    }
+
+    setPropertyProfile(profile);
+    return null;
+  }
+
   async function handleSaveAsset(values: AssetFormValues, asset?: Asset): Promise<string | null> {
     if (!session || session.role !== 'manager') {
       return 'La sesión del encargado no está disponible.';
@@ -266,7 +301,16 @@ export default function App() {
     const cleanTitle = values.title.trim();
     const cleanDate = values.date.trim();
     const cleanCost = values.cost.trim();
+    const cleanNextReviewDate = values.nextReviewDate.trim();
     const parsedCost = cleanCost ? Number(cleanCost.replace(',', '.')) : 0;
+
+    if (!isValidDateText(cleanDate)) {
+      return 'La fecha debe tener formato YYYY-MM-DD y ser válida.';
+    }
+
+    if (cleanNextReviewDate && !isValidDateText(cleanNextReviewDate)) {
+      return 'La próxima revisión debe tener formato YYYY-MM-DD.';
+    }
 
     if (!Number.isFinite(parsedCost)) {
       return 'El costo debe ser un número válido.';
@@ -286,7 +330,8 @@ export default function App() {
         status: values.status,
         provider: values.provider.trim(),
         responsible: values.responsible.trim(),
-        nextReviewDate: values.nextReviewDate.trim(),
+        managerResponse: values.managerResponse.trim(),
+        nextReviewDate: cleanNextReviewDate,
         updatedAt: now,
       };
 
@@ -316,7 +361,8 @@ export default function App() {
       provider: values.provider.trim(),
       responsible: values.responsible.trim(),
       createdBy: session.userId,
-      nextReviewDate: values.nextReviewDate.trim(),
+      managerResponse: values.managerResponse.trim(),
+      nextReviewDate: cleanNextReviewDate,
       createdAt: now,
       updatedAt: now,
     };
@@ -353,6 +399,53 @@ export default function App() {
     }
 
     setManagerRoute({ name: 'assetDetail', asset });
+    return null;
+  }
+
+  async function handleUpdateEventStatus(
+    asset: Asset,
+    event: OperationalEvent,
+    status: OperationalEvent['status'],
+  ): Promise<string | null> {
+    if (!session || session.role !== 'manager') {
+      return 'La sesión del encargado no está disponible.';
+    }
+
+    if (asset.userId !== session.userId || event.assetId !== asset.id) {
+      return 'No puedes actualizar este evento desde esta sesión.';
+    }
+
+    const storedEvents = await getEvents();
+    const storedEvent = storedEvents.find((currentEvent) => currentEvent.id === event.id);
+
+    if (!storedEvent) {
+      return 'El evento ya no está disponible.';
+    }
+
+    const responseByStatus: Record<OperationalEvent['status'], string> = {
+      Pendiente: 'Caso pendiente de revisión.',
+      'En proceso': `Caso tomado por ${session.name}.`,
+      Completado: `Caso completado por ${session.name}.`,
+      Cancelado: `Caso cancelado por ${session.name}.`,
+    };
+    const now = new Date().toISOString();
+    const updatedEvent: OperationalEvent = {
+      ...storedEvent,
+      status,
+      managerResponse: responseByStatus[status],
+      updatedAt: now,
+    };
+
+    const eventsSaved = await saveEvents(
+      storedEvents.map((currentEvent) =>
+        currentEvent.id === event.id ? updatedEvent : currentEvent,
+      ),
+    );
+
+    if (!eventsSaved) {
+      return 'No se pudo actualizar el evento. Reinicia Expo Go y vuelve a intentar.';
+    }
+
     return null;
   }
 
@@ -411,6 +504,7 @@ export default function App() {
       provider: '',
       responsible: session.name,
       createdBy: session.userId,
+      managerResponse: '',
       nextReviewDate: '',
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
@@ -438,10 +532,14 @@ export default function App() {
     );
   }
 
+  const activePropertyProfile = propertyProfile ?? fallbackPropertyProfile;
+  const propertyName = activePropertyProfile.name;
+
   if (!session) {
     if (authRoute === 'register') {
       return (
         <RegisterScreen
+          propertyName={propertyName}
           onRegister={handleRegister}
           onGoToLogin={() => setAuthRoute('login')}
         />
@@ -450,6 +548,7 @@ export default function App() {
 
     return (
       <LoginScreen
+        propertyName={propertyName}
         onLogin={handleLogin}
         onGoToRegister={() => setAuthRoute('register')}
       />
@@ -461,9 +560,21 @@ export default function App() {
   }
 
   if (session.role === 'resident') {
+    if (residentRoute === 'reports') {
+      return (
+        <ResidentReportsScreen
+          propertyName={propertyName}
+          session={session}
+          onBack={() => setResidentRoute('home')}
+          onLogout={handleLogout}
+        />
+      );
+    }
+
     if (residentRoute === 'report') {
       return (
         <ResidentReportScreen
+          propertyName={propertyName}
           session={session}
           onCancel={() => setResidentRoute('home')}
           onSubmit={handleSaveResidentReport}
@@ -473,9 +584,46 @@ export default function App() {
 
     return (
       <ResidentHomeScreen
+        propertyName={propertyName}
         session={session}
         onLogout={handleLogout}
         onReportIncident={() => setResidentRoute('report')}
+        onViewReports={() => setResidentRoute('reports')}
+      />
+    );
+  }
+
+  if (managerRoute.name === 'alertCenter') {
+    return (
+      <AlertCenterScreen
+        propertyName={propertyName}
+        session={session}
+        onBack={() => setManagerRoute({ name: 'dashboard' })}
+        onLogout={handleLogout}
+        onOpenEvent={(asset, event) => setManagerRoute({ name: 'eventForm', asset, event })}
+        onUpdateEventStatus={handleUpdateEventStatus}
+      />
+    );
+  }
+
+  if (managerRoute.name === 'propertySettings') {
+    return (
+      <PropertySettingsScreen
+        profile={activePropertyProfile}
+        onBack={() => setManagerRoute({ name: 'dashboard' })}
+        onLogout={handleLogout}
+        onSave={handleSavePropertyProfile}
+      />
+    );
+  }
+
+  if (managerRoute.name === 'reportPreview') {
+    return (
+      <ReportPreviewScreen
+        profile={activePropertyProfile}
+        session={session}
+        onBack={() => setManagerRoute({ name: 'dashboard' })}
+        onLogout={handleLogout}
       />
     );
   }
@@ -518,14 +666,19 @@ export default function App() {
         onEditAsset={(asset) => setManagerRoute({ name: 'assetForm', asset })}
         onEditEvent={(asset, event) => setManagerRoute({ name: 'eventForm', asset, event })}
         onLogout={handleLogout}
+        onUpdateEventStatus={handleUpdateEventStatus}
       />
     );
   }
 
   return (
     <UserDashboardScreen
+      propertyName={propertyName}
       session={session}
       onCreateAsset={() => setManagerRoute({ name: 'assetForm' })}
+      onOpenAlerts={() => setManagerRoute({ name: 'alertCenter' })}
+      onOpenPropertySettings={() => setManagerRoute({ name: 'propertySettings' })}
+      onOpenReportPreview={() => setManagerRoute({ name: 'reportPreview' })}
       onOpenAsset={(asset) => setManagerRoute({ name: 'assetDetail', asset })}
       onLogout={handleLogout}
     />

@@ -27,6 +27,11 @@ type AssetDetailScreenProps = {
   onEditAsset: (asset: Asset) => void;
   onEditEvent: (asset: Asset, event: OperationalEvent) => void;
   onLogout: () => void;
+  onUpdateEventStatus: (
+    asset: Asset,
+    event: OperationalEvent,
+    status: OperationalEventStatus,
+  ) => Promise<string | null>;
 };
 
 const statusTone: Record<AssetStatus, 'success' | 'warning' | 'danger'> = {
@@ -63,6 +68,7 @@ export function AssetDetailScreen({
   onEditAsset,
   onEditEvent,
   onLogout,
+  onUpdateEventStatus,
 }: AssetDetailScreenProps) {
   const [events, setEvents] = useState<OperationalEvent[]>([]);
   const [message, setMessage] = useState('');
@@ -130,6 +136,34 @@ export function AssetDetailScreen({
       currentEvents.filter((currentEvent) => currentEvent.id !== event.id),
     );
     setMessage('Evento eliminado. El activo se conservó.');
+  }
+
+  async function updateEventStatus(event: OperationalEvent, status: OperationalEventStatus) {
+    const error = await onUpdateEventStatus(asset, event, status);
+
+    if (error) {
+      setMessage(error);
+      return;
+    }
+
+    setEvents((currentEvents) =>
+      currentEvents.map((currentEvent) =>
+        currentEvent.id === event.id
+          ? {
+              ...currentEvent,
+              status,
+              managerResponse:
+                status === 'En proceso'
+                  ? 'Caso tomado por el encargado.'
+                  : status === 'Completado'
+                    ? 'Caso completado por el encargado.'
+                    : currentEvent.managerResponse,
+              updatedAt: new Date().toISOString(),
+            }
+          : currentEvent,
+      ),
+    );
+    setMessage(`Evento marcado como ${status}.`);
   }
 
   return (
@@ -203,6 +237,34 @@ export function AssetDetailScreen({
                   statusTone={eventStatusTone[event.status]}
                 />
               </Pressable>
+
+              {event.managerResponse ? (
+                <Text style={styles.responseText}>Respuesta: {event.managerResponse}</Text>
+              ) : null}
+
+              {event.status === 'Pendiente' || event.status === 'En proceso' ? (
+                <View style={styles.quickStatusRow}>
+                  {event.status === 'Pendiente' ? (
+                    <Pressable
+                      onPress={() => updateEventStatus(event, 'En proceso')}
+                      style={({ pressed }) => [styles.quickStatusButton, pressed && styles.pressed]}
+                    >
+                      <Text style={styles.quickStatusText}>Tomar caso</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable
+                    onPress={() => updateEventStatus(event, 'Completado')}
+                    style={({ pressed }) => [
+                      styles.quickStatusButton,
+                      styles.completeButton,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <Text style={styles.quickStatusText}>Completar</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
               <Pressable
                 onPress={() => requestDeleteEvent(event)}
                 style={({ pressed }) => [styles.eventDeleteButton, pressed && styles.pressed]}
@@ -305,6 +367,35 @@ const styles = StyleSheet.create({
   },
   eventBlock: {
     gap: spacing.sm,
+  },
+  responseText: {
+    color: colors.canopy,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 20,
+    marginLeft: 34,
+  },
+  quickStatusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginLeft: 34,
+  },
+  quickStatusButton: {
+    alignItems: 'center',
+    backgroundColor: colors.teal,
+    borderRadius: radius.lg,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing.lg,
+  },
+  completeButton: {
+    backgroundColor: colors.canopy,
+  },
+  quickStatusText: {
+    color: colors.ivory,
+    fontSize: 14,
+    fontWeight: '800',
   },
   eventDeleteButton: {
     alignItems: 'center',

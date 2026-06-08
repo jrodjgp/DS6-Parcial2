@@ -1,4 +1,5 @@
 import { Asset, OperationalEvent } from '../types';
+import { isFutureDateText } from '../utils/dateUtils';
 
 export type ManagerStats = {
   totalAssets: number;
@@ -36,19 +37,9 @@ export function calculateManagerStats(
 
   const accumulatedCost = managerEvents.reduce((total, event) => total + event.cost, 0);
 
-  const upcomingReviews = managerEvents.filter((event) => {
-    if (!event.nextReviewDate) {
-      return false;
-    }
-
-    const reviewDate = new Date(event.nextReviewDate);
-
-    if (Number.isNaN(reviewDate.getTime())) {
-      return false;
-    }
-
-    return reviewDate.getTime() > referenceDate.getTime();
-  }).length;
+  const upcomingReviews = managerEvents.filter((event) =>
+    isFutureDateText(event.nextReviewDate, referenceDate),
+  ).length;
 
   return {
     totalAssets: managerAssets.length,

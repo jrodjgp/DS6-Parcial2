@@ -9,11 +9,12 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
 type LoginScreenProps = {
+  propertyName: string;
   onLogin: (email: string, password: string) => Promise<string | null>;
   onGoToRegister: () => void;
 };
 
-export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
+export function LoginScreen({ propertyName, onLogin, onGoToRegister }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -40,7 +41,7 @@ export function LoginScreen({ onLogin, onGoToRegister }: LoginScreenProps) {
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
       <HeaderHero
-        label="PH Bahía Central"
+        label={propertyName}
         title="Umbral"
         subtitle="La memoria operativa de tu PH"
         centered

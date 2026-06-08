@@ -9,11 +9,12 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
 type RegisterScreenProps = {
+  propertyName: string;
   onRegister: (name: string, email: string, password: string) => Promise<string | null>;
   onGoToLogin: () => void;
 };
 
-export function RegisterScreen({ onRegister, onGoToLogin }: RegisterScreenProps) {
+export function RegisterScreen({ propertyName, onRegister, onGoToLogin }: RegisterScreenProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +42,7 @@ export function RegisterScreen({ onRegister, onGoToLogin }: RegisterScreenProps)
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.umbralInk} />
       <HeaderHero
-        label="Nuevo encargado"
+        label={propertyName}
         title="Crear cuenta"
         subtitle="El registro crea un usuario manager para pruebas académicas."
         accent="blue"

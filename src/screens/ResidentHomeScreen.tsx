@@ -8,9 +8,11 @@ import { radius, shadow, spacing } from '../theme/spacing';
 import { Session } from '../types';
 
 type ResidentHomeScreenProps = {
+  propertyName: string;
   session: Session;
   onLogout: () => void;
   onReportIncident: () => void;
+  onViewReports: () => void;
 };
 
 function getInitials(name: string) {
@@ -23,9 +25,11 @@ function getInitials(name: string) {
 }
 
 export function ResidentHomeScreen({
+  propertyName,
   session,
   onLogout,
   onReportIncident,
+  onViewReports,
 }: ResidentHomeScreenProps) {
   return (
     <Screen>
@@ -45,7 +49,7 @@ export function ResidentHomeScreen({
         </View>
 
         <View style={styles.hero}>
-          <Text style={styles.heroLabel}>PH Bahía Central</Text>
+          <Text style={styles.heroLabel}>{propertyName}</Text>
           <Text style={styles.heroTitle}>Hola, {session.name}</Text>
           <Text style={styles.heroText}>
             Accesos rápidos para reportes, reservas y comunicados del PH.
@@ -66,7 +70,7 @@ export function ResidentHomeScreen({
               body="Seguimiento"
               symbol="R"
               variant="gold"
-              onPress={() => Alert.alert('Mis reportes', 'Esta vista queda como placeholder.')}
+              onPress={onViewReports}
             />
           </View>
           <View style={styles.actionRow}>

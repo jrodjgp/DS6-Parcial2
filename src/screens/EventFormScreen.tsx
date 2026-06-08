@@ -14,6 +14,7 @@ import {
   OperationalEventStatus,
   OperationalEventType,
 } from '../types';
+import { isValidDateText } from '../utils/dateUtils';
 
 export type EventFormValues = {
   type: OperationalEventType;
@@ -24,6 +25,7 @@ export type EventFormValues = {
   status: OperationalEventStatus;
   provider: string;
   responsible: string;
+  managerResponse: string;
   nextReviewDate: string;
 };
 
@@ -73,6 +75,7 @@ export function EventFormScreen({
     status: event?.status ?? 'Pendiente',
     provider: event?.provider ?? '',
     responsible: event?.responsible ?? '',
+    managerResponse: event?.managerResponse ?? '',
     nextReviewDate: event?.nextReviewDate ?? '',
   });
   const [message, setMessage] = useState('');
@@ -94,6 +97,16 @@ export function EventFormScreen({
 
     if (!values.type || !values.title.trim() || !values.date.trim() || !values.status) {
       setMessage('Completa tipo, título, fecha y estado.');
+      return;
+    }
+
+    if (!isValidDateText(values.date)) {
+      setMessage('La fecha debe tener formato YYYY-MM-DD y ser válida.');
+      return;
+    }
+
+    if (values.nextReviewDate.trim() && !isValidDateText(values.nextReviewDate)) {
+      setMessage('La próxima revisión debe tener formato YYYY-MM-DD.');
       return;
     }
 
@@ -217,6 +230,16 @@ export function EventFormScreen({
             value={values.responsible}
             onChangeText={(text) => updateValue('responsible', text)}
             placeholder="Nombre del responsable"
+          />
+
+          <AppInput
+            label="Respuesta del encargado"
+            value={values.managerResponse}
+            onChangeText={(text) => updateValue('managerResponse', text)}
+            placeholder="Seguimiento visible para residentes"
+            multiline
+            textAlignVertical="top"
+            style={styles.notesInput}
           />
 
           <AppInput

@@ -19,12 +19,14 @@ export type ResidentReportValues = {
 };
 
 type ResidentReportScreenProps = {
+  propertyName: string;
   session: Session;
   onCancel: () => void;
   onSubmit: (values: ResidentReportValues) => Promise<string | null>;
 };
 
 export function ResidentReportScreen({
+  propertyName,
   session,
   onCancel,
   onSubmit,
@@ -97,7 +99,7 @@ export function ResidentReportScreen({
         contentContainerStyle={styles.content}
       >
         <HeaderHero
-          label="incidencia residente"
+          label={propertyName}
           title="Reportar incidencia"
           subtitle={`Hola, ${session.name}. Cuéntanos qué pasó para enviarlo a la bitácora.`}
           accent="coral"

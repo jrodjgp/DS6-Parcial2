@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { AppInput } from '../components/AppInput';
 import { HeaderHero } from '../components/HeaderHero';
 import { QuickActionCard } from '../components/QuickActionCard';
 import { RiskCard } from '../components/RiskCard';
@@ -17,11 +18,26 @@ import { radius, spacing } from '../theme/spacing';
 import { Asset, AssetPriority, AssetStatus, OperationalEvent, Session } from '../types';
 
 type UserDashboardScreenProps = {
+  propertyName: string;
   session: Session;
   onCreateAsset: () => void;
+  onOpenAlerts: () => void;
+  onOpenPropertySettings: () => void;
+  onOpenReportPreview: () => void;
   onOpenAsset: (asset: Asset) => void;
   onLogout: () => void;
 };
+
+type AssetStatusFilter = 'Todos' | AssetStatus;
+type AssetPriorityFilter = 'Todas' | AssetPriority;
+
+const statusFilters: AssetStatusFilter[] = [
+  'Todos',
+  'Operativo',
+  'En revisión',
+  'Fuera de servicio',
+];
+const priorityFilters: AssetPriorityFilter[] = ['Todas', 'Baja', 'Media', 'Alta', 'Crítica'];
 
 const statusTone: Record<AssetStatus, 'success' | 'warning' | 'danger'> = {
   Operativo: 'success',
@@ -57,12 +73,19 @@ function getAssetSeverity(asset: Asset): 'low' | 'medium' | 'high' | 'critical' 
 }
 
 export function UserDashboardScreen({
+  propertyName,
   session,
   onCreateAsset,
+  onOpenAlerts,
+  onOpenPropertySettings,
+  onOpenReportPreview,
   onOpenAsset,
   onLogout,
 }: UserDashboardScreenProps) {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<AssetStatusFilter>('Todos');
+  const [priorityFilter, setPriorityFilter] = useState<AssetPriorityFilter>('Todas');
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -76,13 +99,29 @@ export function UserDashboardScreen({
   }, [session.userId]);
 
   const [stats, managerEvents] = useDashboardDerivedData(session.userId, assets);
+  const visibleAssets = useMemo(() => {
+    const cleanQuery = query.trim().toLowerCase();
+
+    return assets.filter((asset) => {
+      const matchesQuery =
+        !cleanQuery ||
+        asset.name.toLowerCase().includes(cleanQuery) ||
+        asset.category.toLowerCase().includes(cleanQuery) ||
+        asset.location.toLowerCase().includes(cleanQuery) ||
+        asset.provider.toLowerCase().includes(cleanQuery);
+      const matchesStatus = statusFilter === 'Todos' || asset.status === statusFilter;
+      const matchesPriority = priorityFilter === 'Todas' || asset.priority === priorityFilter;
+
+      return matchesQuery && matchesStatus && matchesPriority;
+    });
+  }, [assets, priorityFilter, query, statusFilter]);
 
   return (
     <Screen>
       <StatusBar barStyle="light-content" backgroundColor={colors.ink} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <HeaderHero
-          label="PH Bahía Central"
+          label={propertyName}
           title={`Hola, ${session.name}`}
           subtitle="Control operativo local para activos, mantenimientos e incidencias."
         >
@@ -110,9 +149,7 @@ export function UserDashboardScreen({
               body={`${stats.openPendingEvents} abiertos`}
               symbol="!"
               variant="gold"
-              onPress={() =>
-                Alert.alert('Pendientes abiertos', 'Se calculan desde eventos pendientes o en proceso.')
-              }
+              onPress={onOpenAlerts}
             />
           </View>
           <View style={styles.actionRow}>
@@ -121,9 +158,7 @@ export function UserDashboardScreen({
               body={`${stats.criticalAssets} con prioridad crítica`}
               symbol="C"
               variant="danger"
-              onPress={() =>
-                Alert.alert('Activos críticos', 'Se calculan desde activos con prioridad crítica.')
-              }
+              onPress={() => setPriorityFilter('Crítica')}
             />
             <QuickActionCard
               title="Cerrar sesión"
@@ -133,6 +168,22 @@ export function UserDashboardScreen({
               onPress={onLogout}
             />
           </View>
+          <View style={styles.actionRow}>
+            <QuickActionCard
+              title="Perfil del PH"
+              body="Datos del conjunto"
+              symbol="P"
+              variant="neutral"
+              onPress={onOpenPropertySettings}
+            />
+            <QuickActionCard
+              title="Resumen"
+              body="Vista para presentar"
+              symbol="R"
+              variant="gold"
+              onPress={onOpenReportPreview}
+            />
+          </View>
         </View>
 
         <View style={styles.listHeader}>
@@ -140,7 +191,38 @@ export function UserDashboardScreen({
             <Text style={styles.sectionTitle}>Mis activos</Text>
             <Text style={styles.sectionSubtitle}>Bitácora principal del PH</Text>
           </View>
-          <Text style={styles.count}>{assets.length} activos</Text>
+          <Text style={styles.count}>{visibleAssets.length}/{assets.length}</Text>
+        </View>
+
+        <View style={styles.filterPanel}>
+          <AppInput
+            label="Buscar activos"
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Nombre, ubicación, proveedor..."
+          />
+          <FilterRow
+            label="Estado"
+            options={statusFilters}
+            selectedValue={statusFilter}
+            onSelect={setStatusFilter}
+          />
+          <FilterRow
+            label="Prioridad"
+            options={priorityFilters}
+            selectedValue={priorityFilter}
+            onSelect={setPriorityFilter}
+          />
+          <Text
+            onPress={() => {
+              setQuery('');
+              setStatusFilter('Todos');
+              setPriorityFilter('Todas');
+            }}
+            style={styles.clearFilters}
+          >
+            Limpiar filtros
+          </Text>
         </View>
 
         {assets.length === 0 ? (
@@ -153,8 +235,18 @@ export function UserDashboardScreen({
               Usa Nuevo activo para iniciar la bitácora operativa del PH.
             </Text>
           </SectionCard>
+        ) : visibleAssets.length === 0 ? (
+          <SectionCard
+            title="Sin coincidencias"
+            subtitle="Ajusta la búsqueda o limpia los filtros para ver tus activos."
+            tone="tealSoft"
+          >
+            <Text style={styles.emptyText}>
+              Los activos siguen guardados; solo están ocultos por el filtro actual.
+            </Text>
+          </SectionCard>
         ) : (
-          assets.map((asset) => (
+          visibleAssets.map((asset) => (
             <RiskCard
               key={asset.id}
               title={asset.name}
@@ -196,6 +288,41 @@ function HeroStatTile({ label, value, tone = 'teal' }: HeroStatTileProps) {
     <View style={[styles.heroStatTile, toneStyle]}>
       <Text style={styles.heroStatValue}>{value}</Text>
       <Text style={styles.heroStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+type FilterRowProps<Option extends string> = {
+  label: string;
+  options: Option[];
+  selectedValue: Option;
+  onSelect: (value: Option) => void;
+};
+
+function FilterRow<Option extends string>({
+  label,
+  options,
+  selectedValue,
+  onSelect,
+}: FilterRowProps<Option>) {
+  return (
+    <View style={styles.filterGroup}>
+      <Text style={styles.filterLabel}>{label}</Text>
+      <View style={styles.filterWrap}>
+        {options.map((option) => {
+          const isSelected = option === selectedValue;
+
+          return (
+            <Text
+              key={option}
+              onPress={() => onSelect(option)}
+              style={[styles.filterChip, isSelected && styles.filterChipSelected]}
+            >
+              {option}
+            </Text>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -293,6 +420,48 @@ const styles = StyleSheet.create({
   },
   count: {
     color: colors.graphite,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  filterPanel: {
+    backgroundColor: colors.ivory,
+    borderColor: colors.line,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  filterGroup: {
+    gap: spacing.sm,
+  },
+  filterLabel: {
+    color: colors.ink,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  filterWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  filterChip: {
+    backgroundColor: colors.mist,
+    borderRadius: radius.pill,
+    color: colors.canopy,
+    fontSize: 13,
+    fontWeight: '800',
+    minHeight: 38,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  filterChipSelected: {
+    backgroundColor: colors.teal,
+    color: colors.ivory,
+  },
+  clearFilters: {
+    alignSelf: 'flex-start',
+    color: colors.teal,
     fontSize: 14,
     fontWeight: '800',
   },

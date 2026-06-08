@@ -6,6 +6,7 @@ import {
   OperationalEvent,
   OperationalEventStatus,
   OperationalEventType,
+  PropertyProfile,
   Session,
   User,
   UserRole,
@@ -16,6 +17,7 @@ const STORAGE_KEYS = {
   assets: 'umbral_assets',
   events: 'umbral_events',
   session: 'umbral_session',
+  propertyProfile: 'umbral_property_profile',
 } as const;
 
 const ADMIN_USER: User = {
@@ -25,6 +27,17 @@ const ADMIN_USER: User = {
   password: 'admin123',
   role: 'system_admin',
   createdAt: '2026-01-01T00:00:00.000Z',
+};
+
+const DEFAULT_PROPERTY_PROFILE: PropertyProfile = {
+  name: 'PH Bahía Central',
+  address: 'Ciudad de Panamá',
+  contactName: 'Administración Umbral',
+  contactPhone: '0000-0000',
+  towers: '2',
+  units: '96',
+  notes: 'Perfil local del PH para presentación académica.',
+  updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
 const USER_ROLES: readonly UserRole[] = ['system_admin', 'manager', 'resident'];
@@ -108,6 +121,20 @@ function isSession(value: unknown): value is Session {
   );
 }
 
+function isPropertyProfile(value: unknown): value is PropertyProfile {
+  return (
+    isRecord(value) &&
+    isString(value.name) &&
+    isString(value.address) &&
+    isString(value.contactName) &&
+    isString(value.contactPhone) &&
+    isString(value.towers) &&
+    isString(value.units) &&
+    isString(value.notes) &&
+    isString(value.updatedAt)
+  );
+}
+
 function isAsset(value: unknown): value is Asset {
   return (
     isRecord(value) &&
@@ -139,6 +166,7 @@ function isOperationalEvent(value: unknown): value is OperationalEvent {
     isString(value.provider) &&
     isString(value.responsible) &&
     isString(value.createdBy) &&
+    (!('managerResponse' in value) || isString(value.managerResponse)) &&
     isString(value.nextReviewDate) &&
     isString(value.createdAt) &&
     isString(value.updatedAt)
@@ -184,6 +212,12 @@ export async function initializeStorage(): Promise<void> {
   if (users.length === 0) {
     await saveUsers([ADMIN_USER]);
   }
+
+  const propertyProfile = await readJson<unknown>(STORAGE_KEYS.propertyProfile, null);
+
+  if (!isPropertyProfile(propertyProfile)) {
+    await savePropertyProfile(DEFAULT_PROPERTY_PROFILE);
+  }
 }
 
 export async function getUsers(): Promise<User[]> {
@@ -210,6 +244,20 @@ export async function saveCurrentSession(session: Session): Promise<boolean> {
 
 export async function clearCurrentSession(): Promise<boolean> {
   return removeKey(STORAGE_KEYS.session);
+}
+
+export async function getPropertyProfile(): Promise<PropertyProfile> {
+  const profile = await readJson<unknown>(STORAGE_KEYS.propertyProfile, null);
+
+  if (!isPropertyProfile(profile)) {
+    return DEFAULT_PROPERTY_PROFILE;
+  }
+
+  return profile;
+}
+
+export async function savePropertyProfile(profile: PropertyProfile): Promise<boolean> {
+  return writeJson(STORAGE_KEYS.propertyProfile, profile);
 }
 
 export async function getAssets(): Promise<Asset[]> {
